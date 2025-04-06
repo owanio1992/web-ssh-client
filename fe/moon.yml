@@ -1,0 +1,7 @@
+tasks:
+  install:
+    command: npm install
+
+
+  dev:
+    command: npm run dev

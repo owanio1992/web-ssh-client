@@ -1,0 +1,9 @@
+tasks:
+  install:
+    command: uv sync
+  migrate:
+    command: uv run manage.py migrate
+  dev:
+    command: uv run manage.py runserver
+  run:
+    command: uv run manage.py runserver
