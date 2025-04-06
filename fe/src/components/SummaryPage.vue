@@ -2,6 +2,7 @@
   <div>
     <h1>{{ username }}</h1>
     <p>{{ lastLogin }}</p>
+    <p>Group: {{ group }}</p>
     <div id="clock">
       <div id="Date">{{ date }}</div>
       <ul>
@@ -27,6 +28,7 @@ export default {
     const minutes = ref('');
     const seconds = ref('');
     const date = ref('');
+    const group = ref('');
 
     const fetchUserData = async () => {
       try {
@@ -43,6 +45,11 @@ export default {
             const lastLoginDate = new Date(data.last_login);
             const localLastLogin = lastLoginDate.toLocaleString();
             lastLogin.value = `Last login: ${localLastLogin}`;
+          }
+          if (data.groups && data.groups.length > 0) {
+            group.value = data.groups.map(group => group.name).join(', ');
+          } else {
+            group.value = 'No group';
           }
         } else {
           username.value = 'Welcome, User!';
@@ -82,7 +89,8 @@ export default {
       minutes,
       seconds,
       date,
-      lastLogin
+      lastLogin,
+      group
     };
   }
 }

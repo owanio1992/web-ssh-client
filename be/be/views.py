@@ -12,10 +12,12 @@ from .models import SSHKey
 @permission_classes([IsAuthenticated])
 def get_user_data(request):
     user = request.user
+    groups = [{'id': group.id, 'name': group.name} for group in user.groups.all()]
     return Response({
         'first_name': user.first_name,
         'last_name': user.last_name,
-        'last_login': user.last_login
+        'last_login': user.last_login,
+        'groups': groups
     })
 
 @api_view(['POST'])
