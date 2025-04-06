@@ -5,6 +5,7 @@ in this project use moon to manage
 moon :init
 
 # (option) migrate, if any schema change
+moon be:makemigrations
 moon be:migrate
 
 # (option) create superuser

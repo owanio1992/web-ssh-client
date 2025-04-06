@@ -8,9 +8,9 @@ permission
 
 FE home page allow sign in, sign up  
 after sign, should have side menu on left, and link to feature page, feature in below
-- upload ssh key: this is admin only feature, here admin can update ssh key, and give a name
+- manage ssh key: this is admin only feature, here admin can update ssh key, and give a name
   the ssh key need save to BE database
-- server list: this is admin only feature, here admin can edit a server list, incloud site/server name/user/host/ssh key name
+- manage server list: this is admin only feature, here admin can edit a server list, incloud site/server name/user/host/ssh key name
   site is a group for server name, site name need unique
   server name in same site need unique, but if different site can duplicate
   user/host is this server config 

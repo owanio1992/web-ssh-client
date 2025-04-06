@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
-from .models import SSHKey
+from .models import SSHKey, Server
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -55,3 +55,43 @@ def delete_ssh_key(request, pk):
 
     ssh_key.delete()
     return Response({'message': 'SSH key deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def add_server(request):
+    site_name = request.data.get('site_name')
+    server_name = request.data.get('server_name')
+    user = request.data.get('user')
+    host = request.data.get('host')
+    ssh_key_id = request.data.get('ssh_key')
+
+    if not site_name or not server_name or not user or not host or not ssh_key_id:
+        return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        ssh_key = SSHKey.objects.get(pk=ssh_key_id)
+    except SSHKey.DoesNotExist:
+        return Response({'error': 'SSH key not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    server = Server(site_name=site_name, server_name=server_name, user=user, host=host, ssh_key=ssh_key)
+    server.save()
+
+    return Response({'message': 'Server added successfully.'}, status=status.HTTP_201_CREATED)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_servers(request):
+    servers = Server.objects.all()
+    data = [{'id': server.id, 'site_name': server.site_name, 'server_name': server.server_name, 'user': server.user, 'host': server.host, 'ssh_key_name': server.ssh_key.name} for server in servers]
+    return Response(data)
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def delete_server(request, pk):
+    try:
+        server = Server.objects.get(pk=pk)
+    except Server.DoesNotExist:
+        return Response({'error': 'Server not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    server.delete()
+    return Response({'message': 'Server deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
