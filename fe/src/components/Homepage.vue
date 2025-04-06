@@ -102,5 +102,6 @@ export default {
   overflow: auto;
   margin-left: 220px; /* Adjust content margin when sidebar is open */
   transition: margin-left 0.3s ease;
+  min-width: 800px; /* Added min-width */
 }
 </style>

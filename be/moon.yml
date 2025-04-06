@@ -1,6 +1,8 @@
 tasks:
   init:
     command: uv sync
+  makemigrations:
+    command: uv run manage.py makemigrations be
   migrate:
     command: uv run manage.py migrate
   createsuperuser:

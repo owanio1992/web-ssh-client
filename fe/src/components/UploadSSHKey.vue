@@ -16,6 +16,8 @@
 </template>
 
 <script>
+import { backendUrl } from '../config.js';
+
 export default {
   data() {
     return {
@@ -24,10 +26,31 @@ export default {
     };
   },
   methods: {
-    handleSubmit() {
-      // TODO: Implement upload logic
-      console.log('Key Name:', this.keyName);
-      console.log('SSH Key:', this.sshKey);
+    async handleSubmit() {
+      try {
+        const response = await fetch(`${backendUrl}/api/ssh-key/upload/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            name: this.keyName,
+            key_content: this.sshKey
+          })
+        });
+
+        if (response.ok) {
+          alert('SSH Key uploaded successfully!');
+          this.keyName = '';
+          this.sshKey = '';
+        } else {
+          const errorData = await response.json();
+          alert(`Error uploading SSH Key: ${errorData.message || response.statusText}`);
+        }
+      } catch (error) {
+        alert(`Error uploading SSH Key: ${error.message}`);
+      }
     }
   }
 };
@@ -58,7 +81,7 @@ input[type="text"] {
 
 textarea {
   width: 100%;
-  height: 150px; /* Increased height */
+  height: 300px; /* Increased height */
   padding: 12px;
   font-size: 16px;
   border: 1px solid #ccc;

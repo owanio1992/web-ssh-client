@@ -21,11 +21,12 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import get_user_data
+from .views import get_user_data, upload_ssh_key
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/user/', get_user_data, name='get_user_data'),
+    path('api/ssh-key/upload/', upload_ssh_key, name='upload_ssh_key'),
 ]
