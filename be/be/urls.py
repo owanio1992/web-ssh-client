@@ -21,7 +21,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import get_user_data, upload_ssh_key
+from .views import get_user_data, upload_ssh_key, list_ssh_keys, delete_ssh_key
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,4 +29,6 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/user/', get_user_data, name='get_user_data'),
     path('api/ssh-key/upload/', upload_ssh_key, name='upload_ssh_key'),
+    path('api/ssh-keys/', list_ssh_keys, name='list_ssh_keys'),
+    path('api/ssh-keys/<int:pk>/delete/', delete_ssh_key, name='delete_ssh_key'),
 ]

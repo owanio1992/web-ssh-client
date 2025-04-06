@@ -5,6 +5,7 @@ import App from './App.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginPage from './components/LoginPage.vue';
 import Homepage from './components/Homepage.vue';
+import ManageSSHKeys from './components/ManageSSHKeys.vue';
 
 const router = createRouter({
   history: createWebHistory(),
