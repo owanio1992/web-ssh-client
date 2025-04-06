@@ -3,7 +3,7 @@
     <aside class="sidebar">
       <ul>
         <li><a href="#" @click.prevent="selectPage('SummaryPage')">Summary</a></li>
-        <li><a href="#" @click.prevent="selectPage('UploadPage')">Upload SSH Key</a></li>
+        <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('UploadSSHKey')">Upload SSH Key</a></li>
         <li><a href="#" @click.prevent="selectPage('ServerListPage')">Server List</a></li>
         <li><a href="#" @click.prevent="selectPage('PermissionManagePage')">Permission Manage</a></li>
         <li><a href="#" @click.prevent="selectPage('ConnectServerPage')">Connect Server</a></li>
@@ -17,24 +17,33 @@
 
 <script>
 import SummaryPage from './SummaryPage.vue';
+import UploadSSHKey from './UploadSSHKey.vue';
 
 export default {
   name: 'Homepage',
   components: {
     SummaryPage,
-    UploadPage: { template: '<div>Upload SSH Key Page</div>' },
+    UploadSSHKey,
     ServerListPage: { template: '<div>Server List Page</div>' },
     PermissionManagePage: { template: '<div>Permission Manage Page</div>' },
     ConnectServerPage: { template: '<div>Connect Server Page</div>' }
   },
   data() {
     return {
-      selectedPage: 'SummaryPage'
+      selectedPage: 'SummaryPage',
+      isAdmin: true // TODO: Replace with actual admin check
     }
   },
   methods: {
     selectPage(pageName) {
       this.selectedPage = pageName;
+    }
+  },
+  watch: {
+    selectedPage(newPage) {
+      if (newPage === 'UploadSSHKey') {
+        this.selectedPage = 'UploadSSHKey';
+      }
     }
   }
 }
