@@ -8,6 +8,7 @@
         <li><a href="#" @click.prevent="selectPage('ServerListPage')">Server List</a></li>
         <li><a href="#" @click.prevent="selectPage('PermissionManagePage')">Permission Manage</a></li>
         <li><a href="#" @click.prevent="selectPage('ConnectServerPage')">Connect Server</a></li>
+        <li><a href="#" @click.prevent="logout">Logout</a></li>
       </ul>
     </aside>
     <main class="content">
@@ -15,6 +16,7 @@
     </main>
   </div>
 </template>
+
 
 <script>
 import SummaryPage from './SummaryPage.vue';
@@ -85,9 +87,17 @@ export default {
           // Redirect to login page if renewal fails
           window.location.href = '/login'; // TODO: Replace with actual login page URL
         });
+    },
+    logout() {
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('expiry');
+        window.location.href = '/login'; // Redirect to login page
+      }
     }
   },
-   watch: {
+  watch: {
     selectedPage(newPage) {
       if (newPage === 'UploadSSHKey') {
         this.selectedPage = 'UploadSSHKey';
