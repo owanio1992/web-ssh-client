@@ -1,9 +1,129 @@
 <template>
-  <h1>Summary test</h1>
+  <div>
+    <h1>{{ username }}</h1>
+    <div id="clock">
+      <div id="Date">{{ date }}</div>
+      <ul>
+        <li id="hours">{{ hours }}</li>
+        <li id="point">:</li>
+        <li id="min">{{ minutes }}</li>
+        <li id="point">:</li>
+        <li id="sec">{{ seconds }}</li>
+      </ul>
+    </div>
+  </div>
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
+import { backendUrl } from '../config.js';
+
 export default {
-  name: 'SummaryPage'
+  name: 'SummaryPage',
+  setup() {
+    const username = ref('User');
+    const hours = ref('');
+    const minutes = ref('');
+    const seconds = ref('');
+    const date = ref('');
+
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${backendUrl}/api/user/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (data && data.first_name && data.last_name) {
+          username.value = `Welcome, ${data.first_name} ${data.last_name}!`;
+        } else {
+          username.value = 'Welcome, User!';
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        username.value = 'Welcome, User!';
+      }
+    };
+
+    const clock = () => {
+      const day = new Date();
+      hours.value = day.getHours().toString().padStart(2, '0');
+      minutes.value = day.getMinutes().toString().padStart(2, '0');
+      seconds.value = day.getSeconds().toString().padStart(2, '0');
+
+      const year = day.getFullYear();
+      const month = String(day.getMonth() + 1).padStart(2, '0');
+      const dayOfMonth = String(day.getDate()).padStart(2, '0');
+      const dayOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][day.getDay()];
+      const timeZone = day.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ')[2];
+
+      date.value = `${year}-${month}-${dayOfMonth} ${dayOfWeek} ${timeZone}`;
+    };
+
+    onMounted(() => {
+      fetchUserData();
+      clock();
+      setInterval(clock, 1000);
+    });
+
+    return {
+      username,
+      hours,
+      minutes,
+      seconds,
+      date
+    };
+  }
 }
 </script>
+
+<style scoped>
+#clock {
+  font-family: 'Share Tech Mono', monospace;
+  color: #ffffff;
+  text-align: center;
+  position: relative;
+  left: 0;
+  top: 0;
+  transform: none;
+  margin: 0 auto;
+  padding: 30px;
+  border: 1px solid #333;
+  background: #1e1e1e;
+}
+
+.time {
+    letter-spacing: 0.05em;
+    font-size: 120px;
+    padding: 5px 0;
+    color: #daf6ff;
+}
+
+.date {
+    letter-spacing: 0.1em;
+    font-size: 36px;
+    color: #daf6ff;
+}
+
+.text {
+    letter-spacing: 0.1em;
+    font-size: 12px;
+    padding: 20px 0 0;
+}
+
+#clock ul {
+  width: 800px;
+  padding: 0px;
+  margin: 0px;
+}
+
+#clock ul li {
+  display: inline-block;
+  font-size: 8em;
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+  color: #fff;
+}
+</style>
