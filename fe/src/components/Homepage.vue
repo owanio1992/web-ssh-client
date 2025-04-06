@@ -10,12 +10,16 @@
         <li><a href="#" @click.prevent="selectPage('ConnectServerPage')">Connect Server</a></li>
         <li><a href="#" @click.prevent="logout">Logout</a></li>
       </ul>
+      <div class="session-expiry">
+        Session expires in: {{ remainingTime }}
+      </div>
     </aside>
     <main class="content">
       <component :is="selectedPage"></component>
     </main>
   </div>
 </template>
+
 
 
 <script>
@@ -37,8 +41,16 @@ export default {
   data() {
     return {
       selectedPage: 'SummaryPage',
-      isAdmin: true // TODO: Replace with actual admin check
+      isAdmin: true, // TODO: Replace with actual admin check
+      remainingTime: ''
     }
+  },
+  mounted() {
+    this.updateRemainingTime();
+    this.intervalId = setInterval(this.updateRemainingTime, 1000);
+  },
+  beforeUnmount() {
+    clearInterval(this.intervalId);
   },
   methods: {
     selectPage(pageName) {
@@ -95,6 +107,23 @@ export default {
         localStorage.removeItem('expiry');
         window.location.href = '/login'; // Redirect to login page
       }
+    },
+    updateRemainingTime() {
+      const expiry = localStorage.getItem('expiry');
+      if (expiry) {
+        const remaining = parseInt(expiry) - new Date().getTime();
+        if (remaining > 0) {
+          const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+          this.remainingTime = `${minutes}m ${seconds}s`;
+        } else {
+          this.remainingTime = 'Session expired';
+          clearInterval(this.intervalId);
+          window.location.href = '/login';
+        }
+      } else {
+        this.remainingTime = 'No session';
+      }
     }
   },
   watch: {
@@ -108,6 +137,21 @@ export default {
 </script>
 
 <style scoped>
+#homepage {
+  display: flex;
+  height: 100vh;
+}
+
+.session-expiry {
+  padding: 10px 15px;
+  text-align: center;
+  color: #cbd5e1;
+  font-size: 0.8em;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
 #homepage {
   display: flex;
   height: 100vh;
