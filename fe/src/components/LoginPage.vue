@@ -45,20 +45,24 @@ export default {
 
           // Store the token and expiry time in local storage
           const token = response.data.access;
+          const refresh = response.data.refresh;
           const expiry = new Date().getTime() + sessionExpiryTime * 60 * 1000; // Calculate expiry time
 
           localStorage.setItem('token', token);
+          localStorage.setItem('refresh_token', refresh);
           localStorage.setItem('expiry', expiry.toString());
 
           // Redirect to home page
           router.push('/homepage');
-        } else {
+        }
+         else {
           // Login failed
           console.error('Login failed', response.data);
           successMessage.value = '';
           failMessage.value = 'Login fail!';
         }
-      } catch (error) {
+      }
+       catch (error) {
         console.error('Error during login:', error);
         successMessage.value = '';
         failMessage.value = 'Login fail!';

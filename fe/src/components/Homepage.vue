@@ -20,6 +20,7 @@
 import SummaryPage from './SummaryPage.vue';
 import UploadSSHKey from './UploadSSHKey.vue';
 import ManageSSHKeys from './ManageSSHKeys.vue';
+import { backendUrl } from '../config.js';
 
 export default {
   name: 'Homepage',
@@ -39,10 +40,54 @@ export default {
   },
   methods: {
     selectPage(pageName) {
+      this.checkSessionValidity();
       this.selectedPage = pageName;
+    },
+    checkSessionValidity() {
+      fetch(backendUrl + '/api/user/', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Session invalid');
+          }
+          console.log('Session is valid');
+          this.renewSession();
+        })
+        .catch(error => {
+          console.error('Session invalid:', error);
+          // Redirect to login page
+          window.location.href = '/login'; // TODO: Replace with actual login page URL
+        });
+    },
+    renewSession() {
+      fetch(backendUrl + '/api/token/refresh/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh: localStorage.getItem('refresh_token') }),
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to renew session');
+          }
+          return response.json();
+        })
+        .then(data => {
+          localStorage.setItem('token', data.access); // Store new access token
+          console.log('Session renewed');
+        })
+        .catch(error => {
+          console.error('Failed to renew session:', error);
+          // Redirect to login page if renewal fails
+          window.location.href = '/login'; // TODO: Replace with actual login page URL
+        });
     }
   },
-  watch: {
+   watch: {
     selectedPage(newPage) {
       if (newPage === 'UploadSSHKey') {
         this.selectedPage = 'UploadSSHKey';
