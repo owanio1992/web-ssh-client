@@ -1,6 +1,7 @@
 <template>
   <div>
     <h1>{{ username }}</h1>
+    <p>{{ lastLogin }}</p>
     <div id="clock">
       <div id="Date">{{ date }}</div>
       <ul>
@@ -38,6 +39,11 @@ export default {
         const data = await response.json();
         if (data && data.first_name && data.last_name) {
           username.value = `Welcome, ${data.first_name} ${data.last_name}!`;
+          if (data.last_login) {
+            const lastLoginDate = new Date(data.last_login);
+            const localLastLogin = lastLoginDate.toLocaleString();
+            lastLogin.value = `Last login: ${localLastLogin}`;
+          }
         } else {
           username.value = 'Welcome, User!';
         }
@@ -46,6 +52,8 @@ export default {
         username.value = 'Welcome, User!';
       }
     };
+
+    const lastLogin = ref('');
 
     const clock = () => {
       const day = new Date();
@@ -73,7 +81,8 @@ export default {
       hours,
       minutes,
       seconds,
-      date
+      date,
+      lastLogin
     };
   }
 }
