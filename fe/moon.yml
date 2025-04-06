@@ -1,7 +1,7 @@
 tasks:
-  install:
+  init:
     command: npm install
-
-
   dev:
     command: npm run dev
+  purge:
+    command: rm -rf node_modules

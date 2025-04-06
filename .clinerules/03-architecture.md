@@ -1,5 +1,6 @@
-here have 2 part FE/BE 
-1. FE
+this repo is a nomorepo
+here have 2 project fe/be 
+1. FE, all source code in fe/ folder
 FE use write by vue, use BE to manage user permission
 permission
   - admin: have full permission
@@ -23,7 +24,7 @@ after sign, should have side menu on left, and link to feature page, feature in 
   if don't have permission, system retrun permission deny error to user
   if user have permission, system will open a wen console terminal, and auto login to server
 
-2. BE
+2. BE, all source code in be/ folder
 BE is user python django framework 
 BE need provide feature to support FE feature
 - manage user by django

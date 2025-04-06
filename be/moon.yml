@@ -1,9 +1,18 @@
 tasks:
-  install:
+  init:
     command: uv sync
   migrate:
     command: uv run manage.py migrate
+  createsuperuser:
+    command: uv run manage.py createsuperuser --no-input
+    env:
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_PASSWORD: admin
+      DJANGO_SUPERUSER_EMAIL: admin@localhost.local
+
   dev:
     command: uv run manage.py runserver
   run:
     command: uv run manage.py runserver
+  purge:
+    command: rm -rf .venv
