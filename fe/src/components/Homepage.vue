@@ -1,21 +1,42 @@
 <template>
   <div id="homepage">
-    <div class="sidebar">
-      <!-- Sidebar content -->
+    <aside class="sidebar">
       <ul>
-        <li><router-link to="/summary">Summary</router-link></li>
-        <li><router-link to="/upload">Upload SSH Key</router-link></li>
-        <li><router-link to="/servers">Server List</router-link></li>
-        <li><router-link to="/permissions">Permission Manage</router-link></li>
-        <li><router-link to="/connect">Connect Server</router-link></li>
+        <li><a href="#" @click.prevent="selectPage('SummaryPage')">Summary</a></li>
+        <li><a href="#" @click.prevent="selectPage('UploadPage')">Upload SSH Key</a></li>
+        <li><a href="#" @click.prevent="selectPage('ServerListPage')">Server List</a></li>
+        <li><a href="#" @click.prevent="selectPage('PermissionManagePage')">Permission Manage</a></li>
+        <li><a href="#" @click.prevent="selectPage('ConnectServerPage')">Connect Server</a></li>
       </ul>
-    </div>
+    </aside>
+    <main class="content">
+      <component :is="selectedPage"></component>
+    </main>
   </div>
 </template>
 
 <script>
+import SummaryPage from './SummaryPage.vue';
+
 export default {
   name: 'Homepage',
+  components: {
+    SummaryPage,
+    UploadPage: { template: '<div>Upload SSH Key Page</div>' },
+    ServerListPage: { template: '<div>Server List Page</div>' },
+    PermissionManagePage: { template: '<div>Permission Manage Page</div>' },
+    ConnectServerPage: { template: '<div>Connect Server Page</div>' }
+  },
+  data() {
+    return {
+      selectedPage: 'SummaryPage'
+    }
+  },
+  methods: {
+    selectPage(pageName) {
+      this.selectedPage = pageName;
+    }
+  }
 }
 </script>
 
