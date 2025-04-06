@@ -46,7 +46,7 @@ export default {
           localStorage.setItem('token', response.data.access);
 
           // Redirect to home page or other authorized page
-          router.push('/home');
+          router.push('/homepage');
         } else {
           // Login failed
           console.error('Login failed', response.data);

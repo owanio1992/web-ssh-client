@@ -1,4 +1,4 @@
 your a expert python, vue software engineer  
 
-please read `architecture.md`, `README.md` 
-and develop this project
+before start develop
+please read all md file in this folder
