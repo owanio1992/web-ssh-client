@@ -92,6 +92,8 @@ export default {
         })
         .then(data => {
           localStorage.setItem('token', data.access); // Store new access token
+          const expiry = new Date().getTime() + 30 * 60 * 1000; // Calculate new expiry time
+          localStorage.setItem('expiry', expiry.toString());
           console.log('Session renewed');
         })
         .catch(error => {
