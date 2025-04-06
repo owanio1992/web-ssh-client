@@ -18,10 +18,10 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue';
+import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
-import backendUrl from '../config';
+import { backendUrl, sessionExpiryTime } from '../config';
 
 export default {
   setup() {
@@ -33,7 +33,7 @@ export default {
 
     const login = async () => {
       try {
-        const response = await axios.post(backendUrl + '/api/token/', { // Replace with your actual API endpoint
+        const response = await axios.post(backendUrl + '/api/token/', {
           username: username.value,
           password: password.value
         });
@@ -42,25 +42,26 @@ export default {
           // Login successful
           successMessage.value = 'Login successful!';
           failMessage.value = '';
-          // Store the token in local storage or a cookie
-          localStorage.setItem('token', response.data.access);
 
-          // Redirect to home page or other authorized page
+          // Store the token and expiry time in local storage
+          const token = response.data.access;
+          const expiry = new Date().getTime() + sessionExpiryTime * 60 * 1000; // Calculate expiry time
+
+          localStorage.setItem('token', token);
+          localStorage.setItem('expiry', expiry.toString());
+
+          // Redirect to home page
           router.push('/homepage');
         } else {
           // Login failed
           console.error('Login failed', response.data);
           successMessage.value = '';
           failMessage.value = 'Login fail!';
-          // Display error message to the user
-          // alert('Login failed: ' + response.data.error);
         }
       } catch (error) {
         console.error('Error during login:', error);
         successMessage.value = '';
         failMessage.value = 'Login fail!';
-        // Display error message to the user
-        // alert('Login failed: ' + error.message);
       }
     };
 
