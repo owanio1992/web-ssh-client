@@ -3,7 +3,6 @@
     <aside class="sidebar">
       <ul>
         <li><a href="#" @click.prevent="selectPage('SummaryPage')">Summary</a></li>
-        <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('UploadSSHKey')">Upload SSH Key</a></li>
         <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('ManageSSHKeys')">Manage SSH Keys</a></li>
         <li><a href="#" @click.prevent="selectPage('ServerListPage')">Server List</a></li>
         <li><a href="#" @click.prevent="selectPage('PermissionManagePage')">Permission Manage</a></li>
@@ -25,7 +24,6 @@
 
 <script>
 import SummaryPage from './SummaryPage.vue';
-import UploadSSHKey from './UploadSSHKey.vue';
 import ManageSSHKeys from './ManageSSHKeys.vue';
 import { backendUrl } from '../config.js';
 
@@ -33,7 +31,6 @@ export default {
   name: 'Homepage',
   components: {
     SummaryPage,
-    UploadSSHKey,
     ManageSSHKeys,
     ServerListPage: { template: '<div>Server List Page</div>' },
     PermissionManagePage: { template: '<div>Permission Manage Page</div>' },
@@ -137,13 +134,6 @@ export default {
         }
       } else {
         this.remainingTime = 'No session';
-      }
-    }
-  },
-  watch: {
-    selectedPage(newPage) {
-      if (newPage === 'UploadSSHKey') {
-        this.selectedPage = 'UploadSSHKey';
       }
     }
   }

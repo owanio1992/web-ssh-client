@@ -1,34 +1,62 @@
 <template>
   <div class="manage-ssh-keys">
     <h1>Manage SSH Keys</h1>
-    <input type="text" v-model="searchQuery" placeholder="Search SSH Keys" />
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Key</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="key in filteredKeys" :key="key.id">
-          <td>{{ key.name }}</td>
-          <td>{{ key.key.substring(0, 20) }}***</td>
-          <td>
-            <button @click="deleteKey(key)">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="tab-buttons">
+      <button :class="{ active: activeTab === 'add' }" @click="activeTab = 'add'">Add SSH Key</button>
+      <button :class="{ active: activeTab === 'delete' }" @click="activeTab = 'delete'">Delete SSH Key</button>
+    </div>
+
+    <div v-if="activeTab === 'add'" class="upload-ssh-key">
+      <form @submit.prevent="handleSubmit">
+        <div class="form-group">
+          <label for="keyName">Key Name:</label>
+          <input type="text" id="keyName" v-model="keyName" required>
+        </div>
+        <div class="form-group">
+          <label for="sshKey">SSH Key:</label>
+          <textarea id="sshKey" v-model="sshKey" required></textarea>
+        </div>
+        <button type="submit">Upload</button>
+      </form>
+    </div>
+
+    <div v-if="activeTab === 'delete'">
+      <input type="text" v-model="searchQuery" placeholder="Search SSH Keys" />
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Key</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="key in filteredKeys" :key="key.id">
+            <td>{{ key.name }}</td>
+            <td>{{ key.key.substring(0, 20) }}***</td>
+            <td>
+              <button @click="deleteKey(key)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script>
 import { ref, onMounted, computed } from 'vue';
-import { backendUrl as config } from '../config';
+import { backendUrl } from '../config.js';
 import axios from 'axios';
 
 export default {
+  data() {
+    return {
+      activeTab: 'add',
+      keyName: '',
+      sshKey: ''
+    };
+  },
   setup() {
     const sshKeys = ref([]);
     const searchQuery = ref('');
@@ -36,7 +64,7 @@ export default {
     const fetchKeys = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${config}/api/ssh-keys/`, {
+        const response = await axios.get(`${backendUrl}/api/ssh-keys/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -60,7 +88,7 @@ export default {
     const deleteKey = async (key) => {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`${config}/api/ssh-keys/${key.id}/delete/`, {
+        await axios.delete(`${backendUrl}/api/ssh-keys/${key.id}/delete/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -78,8 +106,44 @@ export default {
       searchQuery,
       filteredKeys,
       deleteKey,
+      fetchKeys
     };
   },
+  methods: {
+    async handleSubmit() {
+      try {
+        const response = await fetch(`${backendUrl}/api/ssh-key/upload/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            name: this.keyName,
+            key_content: this.sshKey
+          })
+        });
+
+        if (response.ok) {
+          alert('SSH Key uploaded successfully!');
+          this.keyName = '';
+          this.sshKey = '';
+        } else {
+          const errorData = await response.json();
+          alert(`Error uploading SSH Key: ${errorData.message || response.statusText}`);
+        }
+      } catch (error) {
+        alert(`Error uploading SSH Key: ${error.message}`);
+      }
+    }
+  },
+  watch: {
+    activeTab(newTab) {
+      if (newTab === 'delete') {
+        this.fetchKeys();
+      }
+    }
+  }
 };
 </script>
 
@@ -90,6 +154,23 @@ export default {
 
 h1 {
   margin-bottom: 20px;
+}
+
+.tab-buttons {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.tab-buttons button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #f2f2f2;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.tab-buttons button.active {
+  background-color: #ddd;
 }
 
 table {
@@ -112,5 +193,50 @@ button {
   padding: 5px 10px;
   margin-right: 5px;
   cursor: pointer;
+}
+
+.upload-ssh-key {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+textarea {
+  width: 100%;
+  height: 300px; /* Increased height */
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.upload-ssh-key button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.upload-ssh-key button:hover {
+  background-color: #3e8e41;
 }
 </style>
