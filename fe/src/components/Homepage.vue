@@ -1,5 +1,5 @@
 <template>
-  <div id="homepage">
+  <div id="homepage" v-if="user">
     <aside class="sidebar">
       <ul>
         <li><a href="#" @click.prevent="selectPage('SummaryPage')">Summary</a></li>
@@ -18,6 +18,7 @@
       <component :is="selectedPage"></component>
     </main>
   </div>
+  <div v-else>Loading...</div>
 </template>
 
 
@@ -41,11 +42,13 @@ export default {
   data() {
     return {
       selectedPage: 'SummaryPage',
-      isAdmin: true, // TODO: Replace with actual admin check
-      remainingTime: ''
+      isAdmin: false,
+      remainingTime: '',
+      user: null
     }
   },
   mounted() {
+    this.checkSessionValidity();
     this.updateRemainingTime();
     this.intervalId = setInterval(this.updateRemainingTime, 1000);
   },
@@ -66,6 +69,15 @@ export default {
         .then(response => {
           if (!response.ok) {
             throw new Error('Session invalid');
+          }
+          return response.json();
+        })
+        .then(data => {
+          this.user = data;
+          if (data.groups && data.groups.length > 0) {
+            this.isAdmin = data.groups.some(group => group.name === 'admin');
+          } else {
+            this.isAdmin = false;
           }
           console.log('Session is valid');
           this.renewSession();
