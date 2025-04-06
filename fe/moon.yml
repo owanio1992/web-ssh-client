@@ -1,7 +1,7 @@
 tasks:
   init:
-    command: npm install
+    command: bun install
   dev:
-    command: npm run dev
+    command: bun run dev
   purge:
     command: rm -rf node_modules
