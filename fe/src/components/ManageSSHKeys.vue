@@ -41,6 +41,11 @@
         </tbody>
       </table>
     </div>
+    <Notification
+      :message="notificationMessage"
+      :type="notificationType"
+      :trigger="notificationTrigger"
+    />
   </div>
 </template>
 
@@ -48,8 +53,12 @@
 import { ref, onMounted, computed } from 'vue';
 import { backendUrl } from '../config.js';
 import axios from 'axios';
+import Notification from './Notification.vue'; // Import Notification component
 
 export default {
+  components: { // Register Notification component
+    Notification,
+  },
   data() {
     return {
       activeTab: 'add',
@@ -60,6 +69,9 @@ export default {
   setup() {
     const sshKeys = ref([]);
     const searchQuery = ref('');
+    const notificationMessage = ref('');
+    const notificationType = ref('success');
+    const notificationTrigger = ref(0);
 
     const fetchKeys = async () => {
       try {
@@ -86,18 +98,28 @@ export default {
     });
 
     const deleteKey = async (key) => {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`${backendUrl}/api/ssh-keys/${key.id}/delete/`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log('SSH key deleted successfully.');
-        // Refresh the key list
-        fetchKeys();
-      } catch (error) {
-        console.error('Error deleting SSH key:', error);
+      if (confirm(`Are you sure you want to delete the SSH key "${key.name}"?`)) {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.delete(`${backendUrl}/api/ssh-keys/${key.id}/delete/`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          console.log('SSH key deleted successfully.');
+          // Refresh the key list
+          fetchKeys();
+          // Show success notification
+          notificationMessage.value = 'SSH key deleted successfully!';
+          notificationType.value = 'success';
+          notificationTrigger.value++;
+        } catch (error) {
+          console.error('Error deleting SSH key:', error);
+          // Show error notification
+          notificationMessage.value = 'Error deleting SSH key.';
+          notificationType.value = 'error';
+          notificationTrigger.value++;
+        }
       }
     };
 
@@ -106,7 +128,10 @@ export default {
       searchQuery,
       filteredKeys,
       deleteKey,
-      fetchKeys
+      fetchKeys,
+      notificationMessage,
+      notificationType,
+      notificationTrigger,
     };
   },
   methods: {
@@ -125,15 +150,27 @@ export default {
         });
 
         if (response.ok) {
-          alert('SSH Key uploaded successfully!');
+          // alert('SSH Key uploaded successfully!');
           this.keyName = '';
           this.sshKey = '';
+          // Show success notification
+          this.notificationMessage = 'SSH Key uploaded successfully!';
+          this.notificationType = 'success';
+          this.notificationTrigger++;
         } else {
           const errorData = await response.json();
-          alert(`Error uploading SSH Key: ${errorData.message || response.statusText}`);
+          // alert(`Error uploading SSH Key: ${errorData.message || response.statusText}`);
+          // Show error notification
+          this.notificationMessage = `Error uploading SSH Key: ${errorData.error || response.statusText}`;
+          this.notificationType = 'error';
+          this.notificationTrigger++;
         }
       } catch (error) {
-        alert(`Error uploading SSH Key: ${error.message}`);
+        // alert(`Error uploading SSH Key: ${error.message}`);
+        // Show error notification
+        this.notificationMessage = `Error uploading SSH Key: ${error.message}`;
+        this.notificationType = 'error';
+        this.notificationTrigger++;
       }
     }
   },

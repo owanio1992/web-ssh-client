@@ -16,7 +16,8 @@ after sign, should have side menu on left, and link to feature page, feature in 
   user/host is this server config 
   ssh key need select from server saved ssh key file
 - permission manage: this is admin only feature, in default all user don't have permission to connect to server
-  admin can select user in here, add user allow connect to site/server name  
+  this permission use Role-Based Access Control
+  admin can select user to a role, then add role allow connect to site/server name  
 - connect server: in this feature allow user select server to connect
   user can see all site/server name 
   user need select site from first list, then system will update server name in second list

@@ -179,8 +179,12 @@ export default {
         notificationTrigger.value++;
       } catch (error) {
         console.error('Error adding server:', error);
+        let errorMessage = 'Error adding server.';
+        if (error.response && error.response.data && error.response.data.error) {
+          errorMessage = error.response.data.error; // Use specific error from backend
+        }
         // Show error notification
-        notificationMessage.value = 'Error adding server.';
+        notificationMessage.value = errorMessage;
         notificationType.value = 'error';
         notificationTrigger.value++;
       }

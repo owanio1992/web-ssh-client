@@ -73,6 +73,10 @@ def add_server(request):
     except SSHKey.DoesNotExist:
         return Response({'error': 'SSH key not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Check for uniqueness within the same site
+    if Server.objects.filter(site_name=site_name, server_name=server_name).exists():
+        return Response({'error': f'Server name "{server_name}" already exists in site "{site_name}".'}, status=status.HTTP_400_BAD_REQUEST)
+
     server = Server(site_name=site_name, server_name=server_name, user=user, host=host, ssh_key=ssh_key)
     server.save()
 
