@@ -4,7 +4,7 @@
       <ul>
         <li><a href="#" @click.prevent="selectPage('SummaryPage')">Summary</a></li>
         <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('ManageSSHKeys')">Manage SSH Keys</a></li>
-        <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('ManageServerList')">Manage Server List</a></li>
+        <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('ManageServers')">Manage Servers</a></li>
         <li><a href="#" @click.prevent="selectPage('PermissionManagePage')">Permission Manage</a></li>
         <li><a href="#" @click.prevent="selectPage('ConnectServerPage')">Connect Server</a></li>
         <li><a href="#" @click.prevent="logout">Logout</a></li>
@@ -25,7 +25,7 @@
 <script>
 import SummaryPage from './SummaryPage.vue';
 import ManageSSHKeys from './ManageSSHKeys.vue';
-import ManageServerList from './ManageServerList.vue';
+import ManageServers from './ManageServers.vue';
 import { backendUrl } from '../config.js';
 
 export default {
@@ -33,7 +33,7 @@ export default {
   components: {
     SummaryPage,
     ManageSSHKeys,
-    ManageServerList,
+    ManageServers,
     PermissionManagePage: { template: '<div>Permission Manage Page</div>' },
     ConnectServerPage: { template: '<div>Connect Server Page</div>' }
   },
