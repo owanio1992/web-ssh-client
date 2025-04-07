@@ -51,11 +51,11 @@
         </thead>
         <tbody>
           <tr v-for="server in filteredServers" :key="server.id">
-            <td>{{ server.siteName }}</td>
-            <td>{{ server.serverName }}</td>
+            <td>{{ server.site_name }}</td>
+            <td>{{ server.server_name }}</td>
             <td>{{ server.user }}</td>
             <td>{{ server.host }}</td>
-            <td>{{ server.sshKeyName }}</td>
+            <td>{{ server.ssh_key_name }}</td>
             <td>
               <button @click="deleteServer(server)">Delete</button>
             </td>
@@ -63,6 +63,11 @@
         </tbody>
       </table>
     </div>
+    <Notification
+      :message="notificationMessage"
+      :type="notificationType"
+      :trigger="notificationTrigger"
+    />
   </div>
 </template>
 
@@ -70,8 +75,12 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { backendUrl } from '../config.js';
+import Notification from './Notification.vue'; // Import Notification component
 
 export default {
+  components: { // Register Notification component
+    Notification,
+  },
   setup() {
     const activeTab = ref('add');
     const servers = ref([]);
@@ -84,13 +93,30 @@ export default {
     });
     const sshKeys = ref([]);
     const searchQuery = ref('');
+    const notificationMessage = ref('');
+    const notificationType = ref('success');
+    const notificationTrigger = ref(0);
 
     const fetchServers = async () => {
       try {
-        const response = await axios.get('/api/servers'); // Replace with your actual API endpoint
-        servers.value = response.data;
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${backendUrl}/api/servers/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log('API Response:', response);
+        if (Array.isArray(response.data)) {
+          servers.value = response.data;
+        } else {
+          servers.value = [];
+          console.error('API returned non-array data for servers:', response.data);
+        }
+        console.log('Type of servers.value:', typeof servers.value);
       } catch (error) {
         console.error('Error fetching servers:', error);
+      } finally {
+        // Optional: Add any cleanup code here
       }
     };
 
@@ -117,7 +143,7 @@ export default {
 
     const filteredServers = computed(() => {
       return servers.value.filter((server) =>
-        server.serverName.toLowerCase().includes(searchQuery.value.toLowerCase())
+        server.server_name && server.server_name.toLowerCase().includes(searchQuery.value.toLowerCase())
       );
     });
 
@@ -147,17 +173,40 @@ export default {
           host: '',
           sshKeyName: '',
         };
+        // Show success notification
+        notificationMessage.value = 'Server added successfully!';
+        notificationType.value = 'success';
+        notificationTrigger.value++;
       } catch (error) {
         console.error('Error adding server:', error);
+        // Show error notification
+        notificationMessage.value = 'Error adding server.';
+        notificationType.value = 'error';
+        notificationTrigger.value++;
       }
     };
 
     const deleteServer = async (server) => {
-      try {
-        await axios.delete(`/api/servers/${server.id}`); // Replace with your actual API endpoint
-        fetchServers();
-      } catch (error) {
-        console.error('Error deleting server:', error);
+      if (confirm(`Are you sure you want to delete the server "${server.server_name}"?`)) {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.delete(`${backendUrl}/api/servers/${server.id}/delete/`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          fetchServers();
+          // Show success notification
+          notificationMessage.value = 'Server deleted successfully!';
+          notificationType.value = 'success';
+          notificationTrigger.value++;
+        } catch (error) {
+          console.error('Error deleting server:', error);
+          // Show error notification
+          notificationMessage.value = 'Error deleting server.';
+          notificationType.value = 'error';
+          notificationTrigger.value++;
+        }
       }
     };
 
@@ -170,7 +219,10 @@ export default {
       filteredServers,
       deleteServer,
       fetchServers,
-      searchQuery
+      searchQuery,
+      notificationMessage,
+      notificationType,
+      notificationTrigger,
     };
   },
 };
