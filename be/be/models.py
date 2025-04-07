@@ -19,6 +19,7 @@ class Server(models.Model):
 
 class Role(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    permissions = models.ManyToManyField(Server, blank=True)
 
     def __str__(self):
         return self.name

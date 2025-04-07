@@ -52,11 +52,12 @@
             <td>{{ server.site_name }}</td>
             <td>{{ server.server_name }}</td>
             <td>
-              <input type="checkbox" :id="'permission-' + server.id" :value="server.id" :checked="isServerPermitted(server.id)" @change="updateServerPermissions(server.id)" />
+              <input type="checkbox" :id="'permission-' + server.id" :value="server.id" :checked="isServerPermitted(server.id)" />
             </td>
           </tr>
         </tbody>
       </table>
+      <button @click="updateServerPermissions">Update Permissions</button>
     </div>
 
     <div v-if="activeTab === 'manage-user-roles'" class="manage-user-roles-tab">
@@ -109,7 +110,14 @@ export default {
     const roles = ref([]);
     const newRoleName = ref('');
     const servers = ref([]);
-    const selectedRole = ref(null);
+    const _selectedRole = ref(null);
+    const selectedRole = computed({
+      get: () => _selectedRole.value,
+      set: (value) => {
+        _selectedRole.value = value;
+        updateRolePermissions();
+      }
+    });
     const users = ref([]);
     const selectedUser = ref(null);
 
@@ -129,6 +137,7 @@ export default {
         notificationTrigger.value++;
       }
     };
+
 
     const fetchServers = async () => {
       try {
@@ -173,6 +182,7 @@ export default {
           },
         });
         newRoleName.value = '';
+        selectedRole.value = null; // Clear selected role after creating a new role
         fetchRoles();
         notificationMessage.value = 'Role created successfully.';
         notificationType.value = 'success';
@@ -207,7 +217,7 @@ export default {
       }
     };
 
-    const updateServerPermissions = async (serverId) => {
+    const updateServerPermissions = async () => {
       if (!selectedRole.value) {
         notificationMessage.value = 'Please select a role.';
         notificationType.value = 'warning';
@@ -217,23 +227,9 @@ export default {
 
       try {
         const token = localStorage.getItem('token');
-        const role = roles.value.find(r => r.id === selectedRole.value);
-        const isPermitted = isServerPermitted(serverId);
-        let serverIds = [];
-
-        if (role.permissions) {
-          serverIds = role.permissions.map(p => p.id);
-        }
-
-        if (document.getElementById(`permission-${serverId}`).checked) {
-          if (!isPermitted) {
-            serverIds.push(serverId);
-          }
-        } else {
-          if (isPermitted) {
-            serverIds = serverIds.filter(id => id !== serverId);
-          }
-        }
+        const serverIds = servers.value
+          .filter(server => document.getElementById(`permission-${server.id}`).checked)
+          .map(server => server.id);
 
         await axios.post(`${backendUrl}/api/roles/${selectedRole.value}/update_permissions/`, {
           server_ids: serverIds,
@@ -242,7 +238,7 @@ export default {
             Authorization: `Bearer ${token}`,
           },
         });
-        updateRolePermissions();
+        fetchRoles();
         notificationMessage.value = 'Permissions updated successfully.';
         notificationType.value = 'success';
         notificationTrigger.value++;
@@ -311,26 +307,33 @@ export default {
       if (!selectedRole.value) return false;
       const role = roles.value.find(r => r.id === selectedRole.value);
       if (!role || !role.permissions) return false;
-      return role.permissions.some(p => p.id === serverId);
+      return role.permissions?.some(p => p.id === Number(serverId));
     };
 
-    const updateRolePermissions = () => {
+   const updateRolePermissions = async () => {
       if (selectedRole.value) {
-        const role = roles.value.find(r => r.id === selectedRole.value);
-        if (role && role.permissions) {
-          servers.value.forEach(server => {
-            const checkbox = document.getElementById(`permission-${server.id}`);
-            if (checkbox) {
-              checkbox.checked = role.permissions.some(p => p.id === server.id);
-            }
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get(`${backendUrl}/api/roles/${selectedRole.value}/`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           });
-        } else {
-          servers.value.forEach(server => {
-            const checkbox = document.getElementById(`permission-${server.id}`);
-            if (checkbox) {
-              checkbox.checked = false;
-            }
-          });
+          const role = response.data;
+
+          if (role) {
+            servers.value.forEach(server => {
+              const checkbox = document.getElementById(`permission-${server.id}`);
+              if (checkbox) {
+                checkbox.checked = role.permissions?.some(p => p.id === server.id) || false;
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching roles:', error);
+          notificationMessage.value = 'Error fetching roles.';
+          notificationType.value = 'error';
+          notificationTrigger.value++;
         }
       }
     };
