@@ -3,8 +3,10 @@ tasks:
     command: uv sync
   makemigrations:
     command: uv run manage.py makemigrations be
+    local: true
   migrate:
     command: uv run manage.py migrate
+    local: true
   createsuperuser:
     command: uv run manage.py createsuperuser --no-input
     env:

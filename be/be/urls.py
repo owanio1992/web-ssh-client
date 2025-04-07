@@ -21,7 +21,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import get_user_data, upload_ssh_key, list_ssh_keys, delete_ssh_key, add_server, list_servers, delete_server
+from .views import get_user_data, upload_ssh_key, list_ssh_keys, delete_ssh_key, add_server, list_servers, delete_server, list_roles, create_role, delete_role, list_user_roles, add_user_to_role, remove_user_from_role, list_users
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,4 +34,11 @@ urlpatterns = [
     path('api/servers/add/', add_server, name='add_server'),
     path('api/servers/', list_servers, name='list_servers'),
     path('api/servers/<int:pk>/delete/', delete_server, name='delete_server'),
+    path('api/roles/', list_roles, name='list_roles'),
+    path('api/roles/create/', create_role, name='create_role'),
+    path('api/roles/<int:pk>/delete/', delete_role, name='delete_role'),
+    path('api/user-roles/', list_user_roles, name='list_user_roles'),
+    path('api/user-roles/add/', add_user_to_role, name='add_user_to_role'),
+    path('api/user-roles/<int:pk>/delete/', remove_user_from_role, name='remove_user_from_role'),
+    path('api/users/', list_users, name='list_users'),
 ]

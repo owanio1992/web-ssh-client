@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
-from .models import SSHKey, Server
+from .models import SSHKey, Server, Role, UserRole
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -99,3 +99,160 @@ def delete_server(request, pk):
 
     server.delete()
     return Response({'message': 'Server deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_roles(request):
+    roles = Role.objects.all()
+    data = [{'id': role.id, 'name': role.name} for role in roles]
+    return Response(data)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def create_role(request):
+    name = request.data.get('name')
+    if not name:
+        return Response({'error': 'Name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+    role = Role(name=name)
+    role.save()
+    return Response({'message': 'Role created successfully.'}, status=status.HTTP_201_CREATED)
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def delete_role(request, pk):
+    try:
+        role = Role.objects.get(pk=pk)
+    except Role.DoesNotExist:
+        return Response({'error': 'Role not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Delete any UserRole entries that reference this role
+    UserRole.objects.filter(role=role).delete()
+
+    role.delete()
+    return Response({'message': 'Role deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_permissions(request):
+    permissions = Permission.objects.all()
+    data = [{'id': p.id, 'role_id': p.role.id, 'server_ids': [server.id for server in p.servers.all()]} for p in permissions]
+    return Response(data)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def add_permission(request):
+    role_id = request.data.get('role_id')
+    server_ids = request.data.get('server_ids')
+
+    if not role_id or not server_ids:
+        return Response({'error': 'Role ID and Server IDs are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        role = Role.objects.get(pk=role_id)
+        servers = Server.objects.filter(pk__in=server_ids)
+    except Role.DoesNotExist:
+        return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
+    except Server.DoesNotExist:
+        return Response({'error': 'One or more servers not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    permission = Permission(role=role)
+    permission.save()
+    permission.servers.set(servers)
+
+    return Response({'message': 'Permission added successfully.'}, status=status.HTTP_201_CREATED)
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def delete_permission(request, pk):
+    try:
+        permission = Permission.objects.get(pk=pk)
+    except Permission.DoesNotExist:
+        return Response({'error': 'Permission not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    permission.delete()
+    return Response({'message': 'Permission deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_user_roles(request):
+    user_roles = UserRole.objects.all()
+    data = [{'id': ur.id, 'user_id': ur.user.id, 'role_id': ur.role.id} for ur in user_roles]
+    return Response(data)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def add_user_to_role(request):
+    user_id = request.data.get('user_id')
+    role_id = request.data.get('role_id')
+
+    if not user_id or not role_id:
+        return Response({'error': 'User ID and Role ID are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.get(pk=user_id)
+        role = Role.objects.get(pk=role_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_400_BAD_REQUEST)
+    except Role.DoesNotExist:
+        return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user_role = UserRole(user=user, role=role)
+    user_role.save()
+
+    return Response({'message': 'User added to role successfully.'}, status=status.HTTP_201_CREATED)
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def remove_user_from_role(request, pk):
+    try:
+        user_role = UserRole.objects.get(pk=pk)
+    except UserRole.DoesNotExist:
+        return Response({'error': 'User role not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    user_role.delete()
+    return Response({'message': 'User removed from role successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_users(request):
+    users = User.objects.all()
+    data = [{'id': user.id, 'username': user.username} for user in users]
+    return Response(data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_permissions(request):
+    permissions = Permission.objects.all()
+    data = [{'id': p.id, 'role_id': p.role.id, 'site_name': p.site_name, 'server_name': p.server_name} for p in permissions]
+    return Response(data)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def add_permission(request):
+    role_id = request.data.get('role_id')
+    site_name = request.data.get('site_name')
+    server_name = request.data.get('server_name')
+
+    if not role_id or not site_name or not server_name:
+        return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        role = Role.objects.get(pk=role_id)
+    except Role.DoesNotExist:
+        return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    permission = Permission(role=role, site_name=site_name, server_name=server_name)
+    permission.save()
+
+    return Response({'message': 'Permission added successfully.'}, status=status.HTTP_201_CREATED)
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def delete_permission(request, pk):
+    try:
+        permission = Permission.objects.get(pk=pk)
+    except Permission.DoesNotExist:
+        return Response({'error': 'Permission not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    permission.delete()
+    return Response({'message': 'Permission deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
