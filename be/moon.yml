@@ -20,3 +20,4 @@ tasks:
     command: uv run manage.py runserver
   purge:
     command: rm -rf .venv
+    local: true

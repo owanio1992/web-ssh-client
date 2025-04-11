@@ -5,3 +5,5 @@ tasks:
     command: bun run dev
   purge:
     command: rm -rf node_modules
+    local: true
+  
