@@ -27,6 +27,7 @@ import SummaryPage from './SummaryPage.vue';
 import ManageSSHKeys from './ManageSSHKeys.vue';
 import ManageServers from './ManageServers.vue';
 import ManagePermissions from './ManagePermissions.vue';
+import ConnectServerPage from './ConnectServerPage.vue';
 import { backendUrl } from '../config.js';
 
 export default {
@@ -36,7 +37,7 @@ export default {
     ManageSSHKeys,
     ManageServers,
     ManagePermissions,
-    ConnectServerPage: { template: '<div>Connect Server Page</div>' }
+    ConnectServerPage
   },
   data() {
     return {
