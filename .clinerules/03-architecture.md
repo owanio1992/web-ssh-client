@@ -19,11 +19,13 @@ after sign, should have side menu on left, and link to feature page, feature in 
   this permission use Role-Based Access Control
   admin can select user to a role, then add role allow connect to site/server name  
 - connect server: in this feature allow user select server to connect
+  this feature implement by Xterm.js
   user can see all site/server name 
   user need select site from first list, then system will update server name in second list
   then user can click a connect button to connect to server, but before connect, system will check permission on this user
   if don't have permission, system retrun permission deny error to user
-  if user have permission, system will open a wen console terminal, and auto login to server
+  if user have permission, system will open a web console terminal in new browser tab, the title should naming by "<site>-<server name>"
+  when browser tab opened, console should auto login to server
 
 2. BE, all source code in be/ folder
 BE is user python django framework 
