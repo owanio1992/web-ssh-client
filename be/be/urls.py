@@ -21,7 +21,14 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import get_user_data, upload_ssh_key, list_ssh_keys, delete_ssh_key, add_server, list_servers, delete_server, list_roles, create_role, delete_role, list_user_roles, add_user_to_role, remove_user_from_role, list_users, get_role, update_permissions
+# Added get_user_roles, update_user_roles
+from .views import (
+    get_user_data, upload_ssh_key, list_ssh_keys, delete_ssh_key,
+    add_server, list_servers, delete_server,
+    list_roles, create_role, delete_role, get_role, update_permissions,
+    list_user_roles, add_user_to_role, remove_user_from_role,
+    list_users, get_user_roles, update_user_roles
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -43,4 +50,7 @@ urlpatterns = [
     path('api/users/', list_users, name='list_users'),
     path('api/roles/<int:pk>/', get_role, name='get_role'),
     path('api/roles/<int:pk>/update_permissions/', update_permissions, name='update_permissions'),
+    # New URLs for user-specific roles
+    path('api/users/<int:user_id>/roles/', get_user_roles, name='get_user_roles'),
+    path('api/users/<int:user_id>/update_roles/', update_user_roles, name='update_user_roles'),
 ]

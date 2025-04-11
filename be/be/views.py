@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from django.shortcuts import get_object_or_404 # Added import
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
@@ -199,6 +201,56 @@ def delete_permission(request, pk):
 
     permission.delete()
     return Response({'message': 'Permission deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# New view to get roles for a specific user
+@api_view(['GET'])
+@permission_classes([IsAdminUser]) # Or IsAuthenticated if regular users need this? Assuming Admin for now.
+def get_user_roles(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+        user_roles = UserRole.objects.filter(user=user)
+        role_ids = [ur.role.id for ur in user_roles]
+        return Response(role_ids)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+# New view to update all roles for a specific user
+@api_view(['POST']) # Using POST, could also be PUT
+@permission_classes([IsAdminUser])
+def update_user_roles(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    role_ids = request.data.get('role_ids')
+    if role_ids is None or not isinstance(role_ids, list):
+        return Response({'error': 'role_ids (a list) is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate role IDs
+    valid_roles = Role.objects.filter(id__in=role_ids)
+    valid_role_ids = set(role.id for role in valid_roles)
+    invalid_ids = set(role_ids) - valid_role_ids
+    if invalid_ids:
+         return Response({'error': f'Invalid role IDs provided: {list(invalid_ids)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get current roles
+    current_role_ids = set(UserRole.objects.filter(user=user).values_list('role_id', flat=True))
+
+    # Roles to add
+    roles_to_add = valid_role_ids - current_role_ids
+    for role_id in roles_to_add:
+        # Use get() since we validated existence
+        role = Role.objects.get(pk=role_id)
+        UserRole.objects.create(user=user, role=role)
+
+    # Roles to remove
+    roles_to_remove = current_role_ids - valid_role_ids
+    if roles_to_remove:
+        UserRole.objects.filter(user=user, role_id__in=roles_to_remove).delete()
+
+    return Response({'message': 'User roles updated successfully.'}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

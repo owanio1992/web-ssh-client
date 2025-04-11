@@ -35,9 +35,15 @@
     <div v-if="activeTab === 'manage-permissions'" class="manage-permissions-tab">
       <h2>Manage Permissions</h2>
       <label for="roleSelect">Select Role:</label>
-      <select id="roleSelect" v-model="selectedRole" @change="updateRolePermissions">
-        <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
-      </select>
+      <v-select
+        id="roleSelect"
+        :options="roles"
+        label="name"
+        :reduce="role => role.id"
+        v-model="selectedRole"
+        placeholder="Search and select a role..."
+      ></v-select>
+      <!-- Note: The @change="updateRolePermissions" is handled automatically by v-model binding with the computed property -->
 
       <table>
         <thead>
@@ -63,26 +69,39 @@
     <div v-if="activeTab === 'manage-user-roles'" class="manage-user-roles-tab">
       <h2>Manage User Roles</h2>
       <label for="userSelect">Select User:</label>
-      <select id="userSelect" v-model="selectedUser">
-        <option v-for="user in users" :key="user.id" :value="user.id">{{ user.username }}</option>
-      </select>
+      <v-select
+        id="userSelect"
+        :options="users"
+        label="username"
+        :reduce="user => user.id"
+        v-model="selectedUser"
+        placeholder="Search and select a user..."
+      ></v-select>
 
       <table>
         <thead>
           <tr>
             <th>Role Name</th>
-            <th>User Role</th>
+            <th>Assigned</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="role in roles" :key="role.id">
             <td>{{ role.name }}</td>
             <td>
-              <input type="checkbox" :id="'user-role-' + role.id" :value="role.id" @change="updateUserRole(role)" />
+              <input
+                type="checkbox"
+                :id="'user-role-' + role.id"
+                :value="role.id"
+                :checked="selectedUserRoles.has(role.id)"
+                @change="toggleRoleSelection(role.id, $event.target.checked)"
+                :disabled="!selectedUser"
+              />
             </td>
           </tr>
         </tbody>
       </table>
+      <button @click="saveUserRoles" :disabled="!selectedUser">Update Roles</button>
     </div>
     <Notification
       :message="notificationMessage"
@@ -93,13 +112,16 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
+import vSelect from 'vue-select'; // Import vue-select
+import 'vue-select/dist/vue-select.css'; // Import vue-select CSS
 import { backendUrl } from '../config.js';
 import Notification from './Notification.vue';
 
 export default {
   components: {
+    vSelect, // Register vue-select component
     Notification,
   },
   setup() {
@@ -119,7 +141,48 @@ export default {
       }
     });
     const users = ref([]);
-    const selectedUser = ref(null);
+    const _selectedUser = ref(null); // Renamed for watcher
+    const selectedUserRoles = ref(new Set());
+    const originalUserRoles = ref(new Set()); // To track original state if needed
+
+    // --- New function to fetch roles for a specific user ---
+    const fetchUserRoles = async (userId) => {
+      if (!userId) {
+        selectedUserRoles.value.clear();
+        originalUserRoles.value.clear();
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${backendUrl}/api/users/${userId}/roles/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        selectedUserRoles.value = new Set(response.data);
+        originalUserRoles.value = new Set(response.data); // Store original state
+      } catch (error) {
+        console.error('Error fetching user roles:', error);
+        notificationMessage.value = 'Error fetching user roles.';
+        notificationType.value = 'error';
+        notificationTrigger.value++;
+        selectedUserRoles.value.clear();
+        originalUserRoles.value.clear();
+      }
+    };
+
+    // --- Watcher for selectedUser ---
+    const selectedUser = computed({
+        get: () => _selectedUser.value,
+        set: (value) => {
+            _selectedUser.value = value;
+            // Don't fetch here directly, use the watcher
+        }
+    });
+
+    watch(_selectedUser, (newUserId) => {
+        fetchUserRoles(newUserId);
+    });
+    // --- End Watcher ---
+
 
     const fetchRoles = async () => {
       try {
@@ -250,8 +313,18 @@ export default {
       }
     };
 
-    const updateUserRole = async (role) => {
-      if (!selectedUser.value) {
+    // --- New function to handle checkbox changes ---
+    const toggleRoleSelection = (roleId, isChecked) => {
+      if (isChecked) {
+        selectedUserRoles.value.add(roleId);
+      } else {
+        selectedUserRoles.value.delete(roleId);
+      }
+    };
+
+    // --- New function to save user roles ---
+    const saveUserRoles = async () => {
+      if (!_selectedUser.value) {
         notificationMessage.value = 'Please select a user.';
         notificationType.value = 'warning';
         notificationTrigger.value++;
@@ -260,48 +333,25 @@ export default {
 
       try {
         const token = localStorage.getItem('token');
-        // Check if user role exists
-        const userRoleExists = await axios.get(`${backendUrl}/api/user-roles/`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            user_id: selectedUser.value,
-            role_id: role.id,
-          },
-        });
-
-        if (userRoleExists.data.length > 0) {
-          // Remove user from role
-          await axios.delete(`${backendUrl}/api/user-roles/${userRoleExists.data[0].id}/delete/`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          notificationMessage.value = 'User removed from role successfully.';
-          notificationType.value = 'success';
-          notificationTrigger.value++;
-        } else {
-          // Add user to role
-          await axios.post(`${backendUrl}/api/user-roles/add/`, {
-            user_id: selectedUser.value,
-            role_id: role.id,
-          }, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          notificationMessage.value = 'User added to role successfully.';
-          notificationType.value = 'success';
-          notificationTrigger.value++;
-        }
+        const roleIdsArray = Array.from(selectedUserRoles.value);
+        await axios.post(`${backendUrl}/api/users/${_selectedUser.value}/update_roles/`,
+          { role_ids: roleIdsArray },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        originalUserRoles.value = new Set(selectedUserRoles.value); // Update original state on success
+        notificationMessage.value = 'User roles updated successfully.';
+        notificationType.value = 'success';
+        notificationTrigger.value++;
       } catch (error) {
-        console.error('Error updating user role:', error);
-        notificationMessage.value = 'Error updating user role.';
+        console.error('Error updating user roles:', error);
+        notificationMessage.value = `Error updating user roles: ${error.response?.data?.error || error.message}`;
         notificationType.value = 'error';
         notificationTrigger.value++;
+        // Optionally revert changes on error:
+        // selectedUserRoles.value = new Set(originalUserRoles.value);
       }
     };
+
 
     const isServerPermitted = (serverId) => {
       if (!selectedRole.value) return false;
@@ -356,9 +406,14 @@ export default {
       deleteRole,
       servers,
       selectedRole,
-      updateUserRole,
+      // updateUserRole, // Removed old function
       users,
-      selectedUser,
+      selectedUser, // Keep the computed property for the template v-model
+      _selectedUser, // Keep internal ref if needed elsewhere, though watcher uses it
+      selectedUserRoles,
+      fetchUserRoles, // Expose if needed, though watcher handles it
+      toggleRoleSelection,
+      saveUserRoles,
       isServerPermitted,
       updateServerPermissions,
       updateRolePermissions,
