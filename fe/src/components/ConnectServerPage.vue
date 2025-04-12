@@ -23,6 +23,7 @@
     />
 
     <button @click="connectToServer">Connect</button>
+    <TerminalPage v-if="showTerminal" :site="selectedSite" :server="selectedServer" :key="terminalKey" />
   </div>
 </template>
 
@@ -48,10 +49,11 @@ export default {
       selectedServer: null,
       sites: [],
       servers: [],
+      showTerminal: false,
     };
   },
-  async mounted() {
-    await this.fetchData();
+  mounted() {
+    this.fetchData();
   },
   methods: {
     async fetchData() {
@@ -116,11 +118,16 @@ export default {
       this.selectedServer = null;
       this.servers = this.roleServers[site] || [];
     },
-    async connectToServer() {
+    connectToServer() {
       if (this.selectedSite && this.selectedServer) {
-        window.open('/terminal/index.html', '_blank');
+        this.showTerminal = true;
       }
     },
+  },
+  computed: {
+    terminalKey() {
+      return `${this.selectedSite}-${this.selectedServer}`;
+    }
   },
   watch: {
     selectedSite(newVal) {
