@@ -51,6 +51,10 @@ export default {
     this.checkSessionValidity();
     this.updateRemainingTime();
     this.intervalId = setInterval(this.updateRemainingTime, 1000);
+    const pageFromQuery = this.$route.query.page;
+    if (pageFromQuery) {
+      this.selectedPage = pageFromQuery;
+    }
   },
   beforeUnmount() {
     clearInterval(this.intervalId);
@@ -59,6 +63,7 @@ export default {
     selectPage(pageName) {
       this.checkSessionValidity();
       this.selectedPage = pageName;
+      this.$router.push({ path: '/homepage', query: { page: pageName } });
     },
     checkSessionValidity() {
       fetch(backendUrl + '/api/user/', {
