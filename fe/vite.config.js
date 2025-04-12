@@ -17,5 +17,13 @@ export default defineConfig({
   },
   server: {
     port: 8080
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        terminal: fileURLToPath(new URL('./terminal/index.html', import.meta.url))
+      }
+    }
   }
 })

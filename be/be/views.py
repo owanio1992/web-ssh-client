@@ -188,7 +188,15 @@ def delete_permission(request, pk):
         return Response({'error': 'Permission not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     permission.delete()
-    return Response({'message': 'Permission deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_server(request, site_name, server_name):
+    try:
+        server = Server.objects.get(site_name=site_name, server_name=server_name)
+        data = {'id': server.id, 'site_name': server.site_name, 'server_name': server.server_name, 'user': server.user, 'host': server.host, 'ssh_key_name': server.ssh_key.name}
+        return Response(data)
+    except Server.DoesNotExist:
+        return Response({'error': 'Server not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 # New view to get roles for a specific user

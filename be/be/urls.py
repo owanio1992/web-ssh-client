@@ -27,7 +27,7 @@ from .views import (
     add_server, list_servers, delete_server,
     list_roles, create_role, delete_role, get_role, update_permissions,
     list_user_roles, add_user_to_role, remove_user_from_role,
-    list_users, get_user_roles, update_user_roles
+    list_users, get_user_roles, update_user_roles, get_server
 )
 
 urlpatterns = [
@@ -53,4 +53,5 @@ urlpatterns = [
     # New URLs for user-specific roles
     path('api/users/<int:user_id>/roles/', get_user_roles, name='get_user_roles'),
     path('api/users/<int:user_id>/update_roles/', update_user_roles, name='update_user_roles'),
+    path('api/server/<str:site_name>/<str:server_name>/', get_server, name='get_server'),
 ]

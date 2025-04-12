@@ -9,10 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@xterm/xterm": "^5.5.0",
     "axios": "^1.8.4",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
-    "vue-select": "^4.0.0-beta.6"
+    "vue-select": "^4.0.0-beta.6",
+    "xterm-addon-attach": "^0.9.0",
+    "xterm-addon-fit": "^0.8.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.3",

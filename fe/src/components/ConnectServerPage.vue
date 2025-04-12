@@ -30,12 +30,17 @@
 import vSelect from 'vue-select';
 import 'vue-select/dist/vue-select.css';
 import axios from 'axios';
+import { Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+import 'xterm/css/xterm.css';
 import { backendUrl } from '../config.js';
+import TerminalPage from './TerminalPage.vue';
 
 export default {
   name: 'ConnectServerPage',
   components: {
-    vSelect
+    vSelect,
+    TerminalPage,
   },
   data() {
     return {
@@ -111,14 +116,11 @@ export default {
       this.selectedServer = null;
       this.servers = this.roleServers[site] || [];
     },
-    connectToServer() {
+    async connectToServer() {
       if (this.selectedSite && this.selectedServer) {
-        const url = `/terminal/${this.selectedSite}-${this.selectedServer}`;
-        window.open(url, '_blank');
-      } else {
-        alert('Please select a site and server.');
+        window.open('/terminal/index.html', '_blank');
       }
-    }
+    },
   },
   watch: {
     selectedSite(newVal) {
