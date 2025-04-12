@@ -132,7 +132,7 @@ export default {
     const roles = ref([]);
     const newRoleName = ref('');
     const servers = ref([]);
-    const _selectedRole = ref(null);
+    const _selectedRole = ref(null); // Keep this as is, only changing _selectedUser
     const selectedRole = computed({
       get: () => _selectedRole.value,
       set: (value) => {
@@ -141,7 +141,7 @@ export default {
       }
     });
     const users = ref([]);
-    const _selectedUser = ref(null); // Renamed for watcher
+    const selectedUserRef = ref(null); // Renamed internal ref
     const selectedUserRoles = ref(new Set());
     const originalUserRoles = ref(new Set()); // To track original state if needed
 
@@ -170,15 +170,15 @@ export default {
     };
 
     // --- Watcher for selectedUser ---
-    const selectedUser = computed({
-        get: () => _selectedUser.value,
+    const selectedUser = computed({ // This computed property is used by v-model in the template
+        get: () => selectedUserRef.value,
         set: (value) => {
-            _selectedUser.value = value;
-            // Don't fetch here directly, use the watcher
+            selectedUserRef.value = value;
+            // The watcher below will trigger fetchUserRoles
         }
     });
 
-    watch(_selectedUser, (newUserId) => {
+    watch(selectedUserRef, (newUserId) => { // Watch the internal ref
         fetchUserRoles(newUserId);
     });
     // --- End Watcher ---
@@ -324,7 +324,7 @@ export default {
 
     // --- New function to save user roles ---
     const saveUserRoles = async () => {
-      if (!_selectedUser.value) {
+      if (!selectedUserRef.value) { // Use the ref's value
         notificationMessage.value = 'Please select a user.';
         notificationType.value = 'warning';
         notificationTrigger.value++;
@@ -334,7 +334,7 @@ export default {
       try {
         const token = localStorage.getItem('token');
         const roleIdsArray = Array.from(selectedUserRoles.value);
-        await axios.post(`${backendUrl}/api/users/${_selectedUser.value}/update_roles/`,
+        await axios.post(`${backendUrl}/api/users/${selectedUserRef.value}/update_roles/`, // Use the ref's value
           { role_ids: roleIdsArray },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -406,10 +406,9 @@ export default {
       deleteRole,
       servers,
       selectedRole,
-      // updateUserRole, // Removed old function
       users,
       selectedUser, // Keep the computed property for the template v-model
-      _selectedUser, // Keep internal ref if needed elsewhere, though watcher uses it
+      // _selectedUser, // REMOVED from return statement
       selectedUserRoles,
       fetchUserRoles, // Expose if needed, though watcher handles it
       toggleRoleSelection,
