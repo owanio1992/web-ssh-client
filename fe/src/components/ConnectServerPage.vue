@@ -88,17 +88,9 @@ export default {
         });
         const servers = serversResponse.data;
 
-        // Merge data
+        // Merge all server data
         this.mergedServerData = this.mergeServerData(servers);
         this.sites = Object.keys(this.mergedServerData);
-
-        // Create mergedRoleData
-        const mergedRoleData = this.createMergedRoleData(servers, userRoles);
-        console.log("mergedRoleData:", mergedRoleData);
-
-        if (Object.keys(this.mergedServerData).length === 0) {
-          alert("No servers available for your roles.");
-        }
 
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -113,34 +105,6 @@ export default {
         }
         merged[server.site_name].push(server.server_name);
       });
-      return merged;
-    },
-    async createMergedRoleData(servers, userRoles) {
-      const merged = {};
-      for (const role of userRoles) {
-        if (typeof role === 'object' && role !== null && role.id) {
-          try {
-            const token = localStorage.getItem('token');
-            const roleResponse = await axios.get(`${backendUrl}/api/roles/${role.id}/`, {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-            const roleData = roleResponse.data;
-            merged[role.id] = [];
-            roleData.permissions.forEach(server => {
-              merged[role.id].push({
-                site: server.site_name,
-                server: server.server_name
-              });
-            });
-          } catch (error) {
-            console.error("Error fetching role:", error);
-          }
-        } else {
-          console.warn("Invalid role object:", role);
-        }
-      }
       return merged;
     },
     updateServers(site) {
