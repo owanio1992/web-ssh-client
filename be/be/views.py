@@ -211,16 +211,18 @@ def get_user_roles(request, user_id):
     try:
         user = User.objects.get(pk=user_id)
         user_roles = UserRole.objects.filter(user=user)
-        role_ids = []
+        roles = []
         for ur in user_roles:
             for role in ur.roles.all():
-                role_ids.append(role.id)
-        return Response(role_ids, status=status.HTTP_200_OK)
+                roles.append({'id': role.id, 'name': role.name})
+        return Response(roles, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # New view to update all roles for a specific user
-@api_view(['POST']) # Using POST, could also be PUT
+@api_view(['POST'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def update_user_roles(request, user_id):
     try:
@@ -237,34 +239,18 @@ def update_user_roles(request, user_id):
     valid_role_ids = set(role.id for role in valid_roles)
     invalid_ids = set(role_ids) - valid_role_ids
     if invalid_ids:
-         return Response({'error': f'Invalid role IDs provided: {list(invalid_ids)}'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': f'Invalid role IDs provided: {list(invalid_ids)}'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get current roles
-    current_role_ids = set()
-    for user_role in UserRole.objects.filter(user=user):
-        current_role_ids.update(user_role.roles.values_list('id', flat=True))
+    # Get or create the UserRole object
+    user_role, created = UserRole.objects.get_or_create(user=user)
 
-    # Roles to add
-    roles_to_add = valid_role_ids - current_role_ids
-    for role_id in roles_to_add:
+    # Clear existing roles
+    user_role.roles.clear()
+
+    # Add new roles
+    for role_id in valid_role_ids:
         role = Role.objects.get(pk=role_id)
-        # Get or create the UserRole object
-        user_role, created = UserRole.objects.get_or_create(user=user)
         user_role.roles.add(role)
-
-    # Roles to remove
-    roles_to_remove = current_role_ids - valid_role_ids
-    # Remove roles from the user
-    for role_id in roles_to_remove:
-        try:
-            role = Role.objects.get(pk=role_id)
-            # Get the UserRole object
-            user_role = UserRole.objects.filter(user=user).first()
-            if user_role:
-                user_role.roles.remove(role)
-        except Role.DoesNotExist:
-            # Handle the case where the role doesn't exist
-            print(f"Role with id {role_id} not found.")
 
     return Response({'message': 'User roles updated successfully.'}, status=status.HTTP_200_OK)
 
