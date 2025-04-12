@@ -134,19 +134,6 @@ def delete_role(request, pk):
     role.delete()
     return Response({'message': 'Role deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['POST'])
-@permission_classes([IsAdminUser])
-def update_permissions(request, pk):
-    try:
-        role = Role.objects.get(pk=pk)
-        server_ids = request.data.get('server_ids')
-        if server_ids is None:
-            return Response({'error': 'server_ids are required'}, status=status.HTTP_400_BAD_REQUEST)
-        servers = Server.objects.filter(id__in=server_ids)
-        role.permissions.set(servers)
-        return Response({'message': 'Permissions updated successfully.'}, status=status.HTTP_200_OK)
-    except Role.DoesNotExist:
-        return Response({'error': 'Role not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

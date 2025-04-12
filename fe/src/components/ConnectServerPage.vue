@@ -92,6 +92,32 @@ export default {
         this.mergedServerData = this.mergeServerData(servers);
         this.sites = Object.keys(this.mergedServerData);
 
+        // loop userRoles Fetch selected server, and save to roleServers
+        const roleServers = [];
+        for (const role of userRoles) {
+          const roleId = role.id;
+          const roleResponse = await axios.get(`${backendUrl}/api/roles/${roleId}/`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          const roleData = roleResponse.data;
+          const permissions = roleData.permissions;
+          roleServers.push(...permissions);
+        }
+
+        // Transform roleServers to the desired format
+        const formattedRoleServers = {};
+        roleServers.forEach(server => {
+          if (!formattedRoleServers[server.site_name]) {
+            formattedRoleServers[server.site_name] = [];
+          }
+          formattedRoleServers[server.site_name].push(server.server_name);
+        });
+
+        console.log("Formatted Role Servers:", formattedRoleServers);
+        this.roleServers = formattedRoleServers;
+
       } catch (error) {
         console.error("Error fetching data:", error);
         alert("Failed to fetch data. Please check the console.");
