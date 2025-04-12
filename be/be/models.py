@@ -26,7 +26,7 @@ class Role(models.Model):
 
 class UserRole(models.Model):
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    roles = models.ManyToManyField(Role, blank=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.role.name}"
+        return f"{self.user.username} - {', '.join([role.name for role in self.roles.all()])}"

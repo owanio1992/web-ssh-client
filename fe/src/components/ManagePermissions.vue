@@ -192,7 +192,28 @@ export default {
             Authorization: `Bearer ${token}`,
           },
         });
-        roles.value = response.data;
+        const allRoles = response.data;
+
+        // Filter roles based on user's roles
+        if (selectedUserRef.value) {
+          try {
+            const userRolesResponse = await axios.get(`${backendUrl}/api/users/${selectedUserRef.value}/roles/`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            const userRoles = new Set(userRolesResponse.data.map(role => role.id));
+            roles.value = allRoles.filter(role => userRoles.has(role.id));
+          } catch (error) {
+            console.error('Error fetching user roles:', error);
+            notificationMessage.value = 'Error fetching user roles.';
+            notificationType.value = 'error';
+            notificationTrigger.value++;
+            roles.value = [];
+          }
+        } else {
+          roles.value = allRoles;
+        }
       } catch (error) {
         console.error('Error fetching roles:', error);
         notificationMessage.value = 'Error fetching roles.';

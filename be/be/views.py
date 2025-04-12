@@ -211,7 +211,10 @@ def get_user_roles(request, user_id):
     try:
         user = User.objects.get(pk=user_id)
         user_roles = UserRole.objects.filter(user=user)
-        role_ids = [ur.role.id for ur in user_roles]
+        role_ids = []
+        for ur in user_roles:
+            for role in ur.roles.all():
+                role_ids.append(role.id)
         return Response(role_ids, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -237,19 +240,31 @@ def update_user_roles(request, user_id):
          return Response({'error': f'Invalid role IDs provided: {list(invalid_ids)}'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Get current roles
-    current_role_ids = set(UserRole.objects.filter(user=user).values_list('role_id', flat=True))
+    current_role_ids = set()
+    for user_role in UserRole.objects.filter(user=user):
+        current_role_ids.update(user_role.roles.values_list('id', flat=True))
 
     # Roles to add
     roles_to_add = valid_role_ids - current_role_ids
     for role_id in roles_to_add:
-        # Use get() since we validated existence
         role = Role.objects.get(pk=role_id)
-        UserRole.objects.create(user=user, role=role)
+        # Get or create the UserRole object
+        user_role, created = UserRole.objects.get_or_create(user=user)
+        user_role.roles.add(role)
 
     # Roles to remove
     roles_to_remove = current_role_ids - valid_role_ids
-    if roles_to_remove:
-        UserRole.objects.filter(user=user, role_id__in=roles_to_remove).delete()
+    # Remove roles from the user
+    for role_id in roles_to_remove:
+        try:
+            role = Role.objects.get(pk=role_id)
+            # Get the UserRole object
+            user_role = UserRole.objects.filter(user=user).first()
+            if user_role:
+                user_role.roles.remove(role)
+        except Role.DoesNotExist:
+            # Handle the case where the role doesn't exist
+            print(f"Role with id {role_id} not found.")
 
     return Response({'message': 'User roles updated successfully.'}, status=status.HTTP_200_OK)
 
