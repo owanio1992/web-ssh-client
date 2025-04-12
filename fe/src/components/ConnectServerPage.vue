@@ -92,28 +92,19 @@ export default {
         this.mergedServerData = this.mergeServerData(servers);
         this.sites = Object.keys(this.mergedServerData);
 
-        // loop userRoles Fetch selected server, and save to roleServers
-        const roleServers = [];
-        for (const role of userRoles) {
-          const roleId = role.id;
-          const roleResponse = await axios.get(`${backendUrl}/api/roles/${roleId}/`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          const roleData = roleResponse.data;
-          const permissions = roleData.permissions;
-          roleServers.push(...permissions);
-        }
+        // Fetch permissions for all user roles concurrently
+        const roleServers = (await Promise.all(
+          userRoles.map(role =>
+            axios.get(`${backendUrl}/api/roles/${role.id}/`, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            })
+          )
+        )).flatMap(roleResponse => roleResponse.data.permissions);
 
-        // Transform roleServers to the desired format
-        const formattedRoleServers = {};
-        roleServers.forEach(server => {
-          if (!formattedRoleServers[server.site_name]) {
-            formattedRoleServers[server.site_name] = [];
-          }
-          formattedRoleServers[server.site_name].push(server.server_name);
-        });
+        // Use mergeServerData to format roleServers
+        const formattedRoleServers = this.mergeServerData(roleServers);
 
         console.log("Formatted Role Servers:", formattedRoleServers);
         this.roleServers = formattedRoleServers;
