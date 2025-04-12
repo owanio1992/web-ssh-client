@@ -43,17 +43,37 @@ export default {
       selectedServer: null,
       sites: [],
       servers: [],
-      mergedData: {},
+      mergedServerData: {},
     };
   },
   async mounted() {
     await this.fetchData();
-    console.log("Merged Data:", this.mergedData); // Print merged data to console
+    console.log("mergedServerData:", this.mergedServerData); // Print merged data to console
   },
   methods: {
     async fetchData() {
       try {
         const token = localStorage.getItem('token');
+
+        // Fetch current user
+        const userResponse = await axios.get(`${backendUrl}/api/user`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const user = userResponse.data;
+        console.log("User:", user);
+        const userId = user.id;
+
+        // Fetch user roles
+        const userRolesResponse = await axios.get(`${backendUrl}/api/users/${userId}/roles/`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const userRoles = userRolesResponse.data;
+
+        // Fetch all servers
         const serversResponse = await axios.get(`${backendUrl}/api/servers/`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -61,9 +81,22 @@ export default {
         });
         const servers = serversResponse.data;
 
+        // Filter servers based on user roles
+        const allowedServers = servers.filter(server => {
+          return userRoles.some(role => role.id === server.role); // Assuming server.role is the role ID
+        });
+
         // Merge data
-        this.mergedData = this.mergeData(servers);
-        this.sites = Object.keys(this.mergedData);
+        this.mergedServerData = this.mergeData(allowedServers);
+        this.sites = Object.keys(this.mergedServerData);
+
+        // Create mergedRoleData
+        const mergedRoleData = this.createMergedRoleData(allowedServers);
+        console.log("mergedRoleData:", mergedRoleData);
+
+        if (Object.keys(this.mergedServerData).length === 0) {
+          alert("No servers available for your roles.");
+        }
 
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -80,9 +113,22 @@ export default {
       });
       return merged;
     },
+    createMergedRoleData(servers) {
+      const merged = {};
+      servers.forEach(server => {
+        if (!merged[server.role]) {
+          merged[server.role] = [];
+        }
+        merged[server.role].push({
+          site: server.site_name,
+          server: server.server_name
+        });
+      });
+      return merged;
+    },
     updateServers(site) {
       this.selectedServer = null;
-      this.servers = this.mergedData[site] || [];
+      this.servers = this.mergedServerData[site] || [];
     },
     connectToServer() {
       if (this.selectedSite && this.selectedServer) {

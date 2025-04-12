@@ -16,6 +16,7 @@ def get_user_data(request):
     user = request.user
     groups = [{'id': group.id, 'name': group.name} for group in user.groups.all()]
     return Response({
+        'id': user.id,
         'first_name': user.first_name,
         'last_name': user.last_name,
         'last_login': user.last_login,
@@ -205,19 +206,19 @@ def delete_permission(request, pk):
 
 # New view to get roles for a specific user
 @api_view(['GET'])
-@permission_classes([IsAdminUser]) # Or IsAuthenticated if regular users need this? Assuming Admin for now.
+@permission_classes([IsAuthenticated])
 def get_user_roles(request, user_id):
     try:
         user = User.objects.get(pk=user_id)
         user_roles = UserRole.objects.filter(user=user)
         role_ids = [ur.role.id for ur in user_roles]
-        return Response(role_ids)
+        return Response(role_ids, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 # New view to update all roles for a specific user
 @api_view(['POST']) # Using POST, could also be PUT
-@permission_classes([IsAdminUser])
+@permission_classes([IsAuthenticated, IsAdminUser])
 def update_user_roles(request, user_id):
     try:
         user = User.objects.get(pk=user_id)

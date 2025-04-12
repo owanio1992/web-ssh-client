@@ -5,7 +5,7 @@
         <li><a href="#" @click.prevent="selectPage('SummaryPage')">Summary</a></li>
         <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('ManageSSHKeys')">Manage SSH Keys</a></li>
         <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('ManageServers')">Manage Servers</a></li>
-        <li><a href="#" @click.prevent="selectPage('ManagePermissions')">Permission Manage</a></li>
+        <li v-if="isAdmin"><a href="#" @click.prevent="selectPage('ManagePermissions')">Permission Manage</a></li>
         <li><a href="#" @click.prevent="selectPage('ConnectServerPage')">Connect Server</a></li>
         <li><a href="#" @click.prevent="logout">Logout</a></li>
       </ul>
