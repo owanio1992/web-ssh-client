@@ -43,12 +43,10 @@ export default {
       selectedServer: null,
       sites: [],
       servers: [],
-      mergedServerData: {},
     };
   },
   async mounted() {
     await this.fetchData();
-    console.log("mergedServerData:", this.mergedServerData); // Print merged data to console
   },
   methods: {
     async fetchData() {
@@ -62,7 +60,6 @@ export default {
           }
         });
         const user = userResponse.data;
-        console.log("User:", user);
         const userId = user.id;
 
         // Fetch user roles
@@ -72,25 +69,12 @@ export default {
           }
         });
         const userRoles = userRolesResponse.data;
-        console.log("User Roles:", userRoles);
 
         // Check if userRoles is an array
         if (!Array.isArray(userRoles)) {
           console.error("userRoles is not an array:", userRoles);
           return; // Exit the function if userRoles is not an array
         }
-
-        // Fetch all servers
-        const serversResponse = await axios.get(`${backendUrl}/api/servers/`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        const servers = serversResponse.data;
-
-        // Merge all server data
-        this.mergedServerData = this.mergeServerData(servers);
-        this.sites = Object.keys(this.mergedServerData);
 
         // Fetch permissions for all user roles concurrently
         const roleServers = (await Promise.all(
@@ -105,9 +89,8 @@ export default {
 
         // Use mergeServerData to format roleServers
         const formattedRoleServers = this.mergeServerData(roleServers);
-
-        console.log("Formatted Role Servers:", formattedRoleServers);
         this.roleServers = formattedRoleServers;
+        this.sites = Object.keys(formattedRoleServers);
 
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -126,7 +109,7 @@ export default {
     },
     updateServers(site) {
       this.selectedServer = null;
-      this.servers = this.mergedServerData[site] || [];
+      this.servers = this.roleServers[site] || [];
     },
     connectToServer() {
       if (this.selectedSite && this.selectedServer) {
