@@ -23,6 +23,7 @@ This document outlines the plan to implement the feature where a user can select
     *   The endpoint should:
         *   Retrieve the server information from the database.
         *   Retrieve the SSH key from the database (decrypting it first).
+        *   API need allow user open multiple connection imdepent
         *   Check if the user has permission to connect to the server.
         *   Establish an SSH connection to the remote server using the SSH key.
         *   Return a WebSocket URL to the client.

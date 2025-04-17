@@ -9,6 +9,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
 from .models import SSHKey, Server, Role, UserRole
+import paramiko
+import json
+from django.http import JsonResponse
+import io
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -346,3 +350,53 @@ def delete_permission(request, pk):
 
     permission.delete()
     return Response({'message': 'Permission deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def connect_server(request):
+    server_id = request.data.get('server_id')
+
+    if not server_id:
+        return Response({'error': 'Server ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        server = Server.objects.get(pk=server_id)
+        ssh_key = server.ssh_key
+        # Decrypt the SSH key
+        ssh_key.key_content = ssh_key.decrypt_key()
+    except Server.DoesNotExist:
+        return Response({'error': 'Server not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except SSHKey.DoesNotExist:
+        return Response({'error': 'SSH Key not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Check user permissions
+    user = request.user
+    user_roles = UserRole.objects.filter(user=user)
+    has_permission = False
+    for user_role in user_roles:
+        for role in user_role.roles.all():
+            if server in role.permissions.all():
+                has_permission = True
+                break
+        if has_permission:
+            break
+
+    if not has_permission:
+        return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        # Establish SSH connection
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # Auto-accept unknown host keys (for testing only)
+        client.connect(server.host, username=server.user, key_filename=None, password=None, pkey=paramiko.RSAKey.from_private_key(io.StringIO(ssh_key.key_content)))
+
+        # Start a shell
+        channel = client.invoke_shell()
+
+        # Generate WebSocket URL
+        websocket_url = f'ws/connect_server/{server_id}/'
+
+        return Response({'websocket_url': websocket_url}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
