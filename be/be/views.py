@@ -45,7 +45,7 @@ def upload_ssh_key(request):
 @permission_classes([IsAuthenticated])
 def list_ssh_keys(request):
     ssh_keys = SSHKey.objects.all()
-    data = [{'id': key.id, 'name': key.name, 'key': key.key_content} for key in ssh_keys]
+    data = [{'id': key.id, 'name': key.name, 'key': key.decrypt_key()} for key in ssh_keys]
     return Response(data)
 
 @api_view(['DELETE'])
@@ -73,6 +73,8 @@ def add_server(request):
 
     try:
         ssh_key = SSHKey.objects.get(pk=ssh_key_id)
+        # Decrypt the SSH key
+        ssh_key.key_content = ssh_key.decrypt_key()
     except SSHKey.DoesNotExist:
         return Response({'error': 'SSH key not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
