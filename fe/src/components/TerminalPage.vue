@@ -8,25 +8,21 @@
 
 <script>
 import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
+import axios from 'axios';
+import { backendUrl } from '../config.js';
 
 export default {
-  props: {
-    site: {
-      type: String,
-      required: true
-    },
-    server: {
-      type: String,
-      required: true
-    }
-  },
-  setup(props) {
+  setup() {
+    const route = useRoute();
+    const site = route.query.site;
+    const server = route.query.server;
     const terminal = ref(null);
 
-    onMounted(() => {
+    onMounted(async () => {
       const term = new Terminal();
       const fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
@@ -34,11 +30,48 @@ export default {
       fitAddon.fit();
 
       term.writeln('Welcome to the terminal!');
-      term.writeln(`Connecting to ${props.site} - ${props.server}...`);
+      term.writeln(`Connecting to ${site} - ${server}...`);
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.post(`${backendUrl}/api/connect_server`, {
+          site: site,
+          server: server
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        const websocketUrl = response.data.websocket_url;
+        const ws = new WebSocket(websocketUrl);
+
+        ws.onopen = () => {
+          term.writeln('WebSocket connection established.');
+        };
+
+        ws.onmessage = (event) => {
+          term.write(event.data);
+        };
+
+        ws.onclose = () => {
+          term.writeln('WebSocket connection closed.');
+        };
+
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+
+      } catch (error) {
+        console.error("Error connecting to server:", error);
+        term.writeln('Error connecting to server. Please check the console.');
+      }
     });
 
     return {
-      terminal
+      terminal,
+      site,
+      server
     };
   }
 }

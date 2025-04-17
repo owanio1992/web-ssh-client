@@ -23,7 +23,6 @@
     />
 
     <button @click="connectToServer">Connect</button>
-    <TerminalPage v-if="showTerminal" :site="selectedSite" :server="selectedServer" :key="terminalKey" />
   </div>
 </template>
 
@@ -49,7 +48,6 @@ export default {
       selectedServer: null,
       sites: [],
       servers: [],
-      showTerminal: false,
     };
   },
   mounted() {
@@ -120,7 +118,8 @@ export default {
     },
     connectToServer() {
       if (this.selectedSite && this.selectedServer) {
-        this.showTerminal = true;
+        const route = `/terminal?site=${this.selectedSite}&server=${this.selectedServer}`;
+        window.open(route, '_blank');
       }
     },
   },
