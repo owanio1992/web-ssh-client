@@ -5,6 +5,7 @@ import App from './App.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginPage from './components/LoginPage.vue';
 import Homepage from './components/Homepage.vue';
+import TerminalPage from './components/TerminalPage.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,6 +16,7 @@ const router = createRouter({
     },
     { path: '/login', component: LoginPage },
     { path: '/homepage', component: Homepage, meta: { requiresAuth: true } },
+    { path: '/terminal', component: TerminalPage, meta: { requiresAuth: true } },
   ]
 });
 
