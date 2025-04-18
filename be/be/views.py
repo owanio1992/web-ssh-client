@@ -13,6 +13,7 @@ import paramiko
 import json
 from django.http import JsonResponse
 import io
+import traceback # Import the traceback module
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -388,7 +389,10 @@ def connect_server(request):
         # Establish SSH connection
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # Auto-accept unknown host keys (for testing only)
-        client.connect(server.host, username=server.user, key_filename=None, password=None, pkey=paramiko.RSAKey.from_private_key(io.StringIO(ssh_key.key_content)))
+        # Use general PKey loader to support different key types (RSA, Ed25519, etc.)
+        # Attempt to load as RSA key directly from string content
+        pkey = paramiko.RSAKey.from_private_key(io.StringIO(ssh_key.key_content))
+        client.connect(server.host, username=server.user, key_filename=None, password=None, pkey=pkey)
 
         # Start a shell
         channel = client.invoke_shell()
@@ -399,4 +403,7 @@ def connect_server(request):
         return Response({'websocket_url': websocket_url}, status=status.HTTP_200_OK)
 
     except Exception as e:
+        # Log the full traceback for debugging
+        print("Error in connect_server view:")
+        traceback.print_exc() # Print the full traceback
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

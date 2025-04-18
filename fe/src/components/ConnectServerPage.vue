@@ -18,11 +18,11 @@
       id="server"
       v-model="selectedServer"
       :options="servers"
-      :reduce="server_name => server_name"
+      :reduce="server => server"
       label="server_name"
     />
 
-    <button @click="connectToServer">Connect</button>
+    <button @click="connectToServer" :disabled="!selectedServer">Connect</button>
   </div>
 </template>
 
@@ -102,24 +102,33 @@ export default {
         alert("Failed to fetch data. Please check the console.");
       }
     },
+    // Keep full server objects, grouped by site_name
     mergeServerData(servers) {
       const merged = {};
       servers.forEach(server => {
         if (!merged[server.site_name]) {
           merged[server.site_name] = [];
         }
-        merged[server.site_name].push(server.server_name);
+        // Ensure no duplicates based on ID
+        if (!merged[server.site_name].some(s => s.id === server.id)) {
+            merged[server.site_name].push({ id: server.id, server_name: server.server_name });
+        }
       });
       return merged;
     },
     updateServers(site) {
-      this.selectedServer = null;
-      this.servers = this.roleServers[site] || [];
+      this.selectedServer = null; // Reset server selection when site changes
+      this.servers = this.roleServers[site] || []; // Update server options
     },
     connectToServer() {
-      if (this.selectedSite && this.selectedServer) {
-        const route = `/terminal?site=${this.selectedSite}&server=${this.selectedServer}`;
+      // Check if selectedServer is an object and has an id
+      if (this.selectedSite && this.selectedServer && typeof this.selectedServer === 'object' && this.selectedServer.id) {
+        // Pass site name, server name, and server ID
+        const route = `/terminal?site=${this.selectedSite}&server=${this.selectedServer.server_name}&serverId=${this.selectedServer.id}`;
         window.open(route, '_blank');
+      } else {
+        console.error("Cannot connect: Server object with ID is not selected.", this.selectedServer);
+        alert("Please select a valid server.");
       }
     },
   },
