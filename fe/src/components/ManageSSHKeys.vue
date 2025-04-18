@@ -14,7 +14,12 @@
         </div>
         <div class="form-group">
           <label for="sshKey">SSH Key:</label>
-          <textarea id="sshKey" v-model="sshKey" required></textarea>
+          <textarea
+            id="sshKey"
+            v-model="sshKey"
+            required
+            placeholder="Begins with 'ssh-rsa', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519', 'sk-ecdsa-sha2-nistp256@openssh.com', or 'sk-ssh-ed25519@openssh.com'"
+          ></textarea>
         </div>
         <button type="submit">Upload</button>
       </form>

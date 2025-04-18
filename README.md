@@ -10,3 +10,10 @@ This project now includes authentication to protect the homepage. Only logged-in
 -   Upon successful login, a session token and expiry time are stored in `localStorage`.
 -   The session expiry time is configurable in `fe/src/config.js` (default: 30 minutes).
 -   If the session token is missing or expired, the user is redirected to the login page.
+
+
+
+user must set First name/
+Last name:
+
+group admin/user

@@ -25,12 +25,26 @@
           <label for="host">Host:</label>
           <input type="text" id="host" v-model="newServer.host" required />
         </div>
-       <div class="form-group">
+        <div class="form-group">
           <label for="sshKeyName">SSH Key Name:</label>
-          <select id="sshKeyName" v-model="newServer.sshKeyName" required>
-            <option value="">Select SSH Key</option>
-            <option v-for="key in sshKeys" :key="key.name" :value="key.id">{{ key.name }}</option>
-          </select>
+          <v-select
+            id="sshKeyName"
+            :options="sshKeys"
+            :reduce="key => key.id"
+            label="name"
+            v-model="newServer.sshKeyName"
+            required
+            placeholder="Select SSH Key"
+          >
+            <template #search="{ attributes, events }">
+              <input
+                class="vs__search"
+                :required="!newServer.sshKeyName"
+                v-bind="attributes"
+                v-on="events"
+              />
+            </template>
+          </v-select>
         </div>
         <button type="submit">Add Server</button>
       </form>
@@ -75,11 +89,14 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { backendUrl } from '../config.js';
-import Notification from './Notification.vue'; // Import Notification component
+import Notification from './Notification.vue';
+import vSelect from 'vue-select';
+import 'vue-select/dist/vue-select.css'; // Import vue-select CSS
 
 export default {
-  components: { // Register Notification component
+  components: {
     Notification,
+    vSelect
   },
   setup() {
     const activeTab = ref('add');
@@ -293,8 +310,7 @@ label {
   margin-bottom: 5px;
 }
 
-input[type="text"],
-select {
+input[type="text"] {
   width: 100%;
   padding: 8px;
   border: 1px solid #ccc;
@@ -302,16 +318,6 @@ select {
   box-sizing: border-box;
 }
 
-.add-server-form button {
-  background-color: #4CAF50;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
+/* Removed custom .vs__... styles */
 
-.add-server-form button:hover {
-  background-color: #3e8e41;
-}
 </style>
