@@ -14,6 +14,7 @@ import json
 from django.http import JsonResponse
 import io
 import traceback # Import the traceback module
+import uuid # Import the uuid module
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -397,8 +398,11 @@ def connect_server(request):
         # Start a shell
         channel = client.invoke_shell()
 
-        # Generate WebSocket URL
-        websocket_url = f'ws/connect_server/{server_id}/'
+        # Generate a unique session ID
+        session_id = str(uuid.uuid4())
+
+        # Generate WebSocket URL with the unique session ID
+        websocket_url = f'ws/connect_server/{server_id}/{session_id}/'
 
         return Response({'websocket_url': websocket_url}, status=status.HTTP_200_OK)
 
