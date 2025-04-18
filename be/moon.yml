@@ -19,5 +19,5 @@ tasks:
   run:
     command: uv run manage.py runserver
   purge:
-    command: rm -rf .venv
+    command: rm -rf .venv && rm -f db.sqlite3
     local: true

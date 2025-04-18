@@ -139,5 +139,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:8080',
 ]
 
-# Encryption Key
-ENCRYPTION_KEY = environ.get("ENCRYPTION_KEY","default")
+# Encryption Key need valid 32-byte url-safe base64-encoded string.
+# generate key
+## python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+ENCRYPTION_KEY = environ.get("ENCRYPTION_KEY","nq5Mi27z4MOXnyeDRjcoBfwVLmx5kvhhKICJhnuRZ3M=")
