@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-from os import environ
+from os import environ,path
 from datetime import timedelta # Import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -186,3 +186,5 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+STATIC_ROOT = path.join(BASE_DIR, 'static', )

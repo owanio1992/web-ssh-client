@@ -14,8 +14,9 @@ tasks:
       DJANGO_SUPERUSER_PASSWORD: admin
       DJANGO_SUPERUSER_EMAIL: admin@localhost.local
 
-  dev:
-    command: uv run manage.py runserver
+  dev: 
+    # https://stackoverflow.com/questions/77623182/static-files-for-django-admin-cant-be-found-while-running-asgi-server
+    command: uv run uvicorn be.asgi:application --reload --host 0.0.0.0
   run:
     command: uv run manage.py runserver
   purge:

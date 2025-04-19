@@ -21,6 +21,9 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from django.conf.urls.static import static
+from django.conf import settings
+
 # Added get_user_roles, update_user_roles
 from .views import (
     get_user_data, upload_ssh_key, list_ssh_keys, delete_ssh_key,
@@ -56,4 +59,6 @@ urlpatterns = [
     path('api/users/<int:user_id>/update_roles/', update_user_roles, name='update_user_roles'),
     path('api/server/<str:site_name>/<str:server_name>/', get_server, name='get_server'),
     path('api/connect_server', connect_server, name='connect_server'), # Added connect_server URL
-]
+    path("admin/", admin.site.urls),
+
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
