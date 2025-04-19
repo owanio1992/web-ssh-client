@@ -12,7 +12,7 @@
       <div class="add-role-form">
         <label for="roleName">Role Name:</label>
         <input type="text" id="roleName" v-model="newRoleName" required />
-        <button @click="createRole">Create Role</button>
+        <button @click="createRole" :disabled="!newRoleName">Create Role</button>
       </div>
       <table>
         <thead>
@@ -58,12 +58,12 @@
             <td>{{ server.site_name }}</td>
             <td>{{ server.server_name }}</td>
             <td>
-              <input type="checkbox" :id="'permission-' + server.id" :value="server.id" :checked="isServerPermitted(server.id)" />
+              <input type="checkbox" :id="'permission-' + server.id" :value="server.id" :checked="isServerPermitted(server.id)" :disabled="!selectedRole" />
             </td>
           </tr>
         </tbody>
       </table>
-      <button @click="updateServerPermissions">Update Permissions</button>
+      <button @click="updateServerPermissions" :disabled="!selectedRole">Update Permissions</button>
     </div>
 
     <div v-if="activeTab === 'manage-user-roles'" class="manage-user-roles-tab">

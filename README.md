@@ -43,5 +43,5 @@ in here can add /remove sshkey
 ## Manage Servers
 in here can add /remove Servers
 
-## Manage Servers
-in here can add /remove Servers
+## Manage Permissions
+user can connect to which 
