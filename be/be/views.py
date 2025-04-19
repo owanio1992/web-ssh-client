@@ -41,6 +41,7 @@ def upload_ssh_key(request):
     ssh_key = SSHKey(name=name, key_content=key_content)
     ssh_key.save()
 
+    logger.info(f"User {request.user.username} uploaded SSH key {name}")
     return Response({'message': 'SSH key uploaded successfully.'}, status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])
@@ -59,6 +60,7 @@ def delete_ssh_key(request, pk):
         return Response({'error': 'SSH key not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     ssh_key.delete()
+    logger.info(f"User {request.user.username} deleted SSH key {ssh_key.name}")
     return Response({'message': 'SSH key deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['POST'])
@@ -95,6 +97,7 @@ def add_server(request):
     server = Server(site_name=site_name, server_name=server_name, user=user, host=host, ssh_key=ssh_key, proxy_server=proxy_server)
     server.save()
 
+    logger.info(f"User {request.user.username} added server {site_name}-{server_name}")
     return Response({'message': 'Server added successfully.'}, status=status.HTTP_201_CREATED)
 
 @api_view(['GET'])
@@ -112,6 +115,7 @@ def delete_server(request, pk):
     except Server.DoesNotExist:
         return Response({'error': 'Server not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+    logger.info(f"User {request.user.username} deleted server {server.site_name}-{server.server_name}")
     server.delete()
     return Response({'message': 'Server deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -130,6 +134,7 @@ def create_role(request):
         return Response({'error': 'Name is required.'}, status=status.HTTP_400_BAD_REQUEST)
     role = Role(name=name)
     role.save()
+    logger.info(f"User {request.user.username} created role {name}")
     return Response({'message': 'Role created successfully.'}, status=status.HTTP_201_CREATED)
 
 @api_view(['DELETE'])
@@ -141,8 +146,9 @@ def delete_role(request, pk):
         return Response({'error': 'Role not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     # Delete any UserRole entries that reference this role
-    UserRole.objects.filter(role=role).delete()
+    UserRole.objects.filter(roles__id=pk).delete()
 
+    logger.info(f"User {request.user.username} deleted role {role.name}")
     role.delete()
     return Response({'message': 'Role deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -164,6 +170,7 @@ def update_permissions(request, pk):
             return Response({'error': 'server_ids are required'}, status=status.HTTP_400_BAD_REQUEST)
         servers = Server.objects.filter(id__in=server_ids)
         role.permissions.set(servers)
+        logger.info(f"User {request.user.username} updated permissions for role {role.name} to servers {server_ids}")
         return Response({'message': 'Permissions updated successfully.'}, status=status.HTTP_200_OK)
     except Role.DoesNotExist:
         return Response({'error': 'Role not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -199,6 +206,7 @@ def delete_permission(request, pk):
     except Permission.DoesNotExist:
         return Response({'error': 'Permission not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+    logger.info(f"User {request.user.username} deleted permission for role {permission.role.name} to server {permission.site_name}-{permission.server_name}")
     permission.delete()
     return Response({'message': 'Permission deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -244,9 +252,9 @@ def update_user_roles(request, user_id):
         return Response({'error': 'role_ids (a list) is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Validate role IDs
-    valid_roles = Role.objects.filter(id__in=role_ids)
+    valid_roles = Role.objects.filter(id__in=[role['id'] if isinstance(role, dict) else role for role in role_ids])
     valid_role_ids = set(role.id for role in valid_roles)
-    invalid_ids = set(role_ids) - valid_role_ids
+    invalid_ids = set([role['id'] if isinstance(role, dict) else role for role in role_ids]) - valid_role_ids
     if invalid_ids:
         return Response({'error': f'Invalid role IDs provided: {list(invalid_ids)}'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -258,9 +266,9 @@ def update_user_roles(request, user_id):
 
     # Add new roles
     for role_id in valid_role_ids:
-        role = Role.objects.get(pk=role_id)
-        user_role.roles.add(role)
+        user_role.roles.add(role_id)
 
+    logger.info(f"User {request.user.username} updated roles for user {user.username} to {valid_role_ids}")
     return Response({'message': 'User roles updated successfully.'}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
@@ -290,6 +298,7 @@ def add_user_to_role(request):
     user_role = UserRole(user=user, role=role)
     user_role.save()
 
+    logger.info(f"User {request.user.username} added user {user.username} to role {role.name}")
     return Response({'message': 'User added to role successfully.'}, status=status.HTTP_201_CREATED)
 
 @api_view(['DELETE'])
@@ -300,6 +309,7 @@ def remove_user_from_role(request, pk):
     except UserRole.DoesNotExist:
         return Response({'error': 'User role not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+    logger.info(f"User {request.user.username} removed user role {user_role.id}")
     user_role.delete()
     return Response({'message': 'User removed from role successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -346,6 +356,7 @@ def add_permission(request):
     permission = Permission(role=role, site_name=site_name, server_name=server_name)
     permission.save()
 
+    logger.info(f"User {request.user.username} added permission for role {role.name} to server {site_name}-{server_name}")
     return Response({'message': 'Permission added successfully.'}, status=status.HTTP_201_CREATED)
 
 @api_view(['DELETE'])
@@ -407,7 +418,7 @@ def connect_server(request):
         host = request.get_host()
 
         # Log successful connection
-        logger.info(f"User {user.username} successfully connected to server {server.site_name}-{server.server_name}")
+        logger.info(f"User {user.username} requested connection to server {server.site_name}-{server.server_name}")
 
         # Generate WebSocket URL with the unique session ID
         websocket_url = f'{scheme}://{host}/ws/connect_server/{server_id}/{session_id}/'

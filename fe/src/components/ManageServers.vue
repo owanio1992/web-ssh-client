@@ -232,6 +232,8 @@ export default {
           sshKeyName: '',
           proxyServerName: '',
         };
+        // Refresh proxy servers list
+        fetchProxyServers();
         // Show success notification
         notificationMessage.value = 'Server added successfully!';
         notificationType.value = 'success';

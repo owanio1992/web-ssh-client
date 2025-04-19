@@ -354,7 +354,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token');
-        const roleIdsArray = Array.from(selectedUserRoles.value);
+        const roleIdsArray = Array.from(selectedUserRoles.value).map(roleId => roleId);
         await axios.post(`${backendUrl}/api/users/${selectedUserRef.value}/update_roles/`, // Use the ref's value
           { role_ids: roleIdsArray },
           { headers: { Authorization: `Bearer ${token}` } }
