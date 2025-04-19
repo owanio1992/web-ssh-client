@@ -18,7 +18,7 @@
             id="sshKey"
             v-model="sshKey"
             required
-            placeholder="Begins with 'ssh-rsa', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519', 'sk-ecdsa-sha2-nistp256@openssh.com', or 'sk-ssh-ed25519@openssh.com'"
+            placeholder="paste private key here"
           ></textarea>
         </div>
         <button type="submit">Upload</button>

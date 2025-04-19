@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="terminal-container">
     <h1>Terminal</h1>
     <p>Connecting to: {{ site }} - {{ server }}</p>
     <div id="terminal"></div>
@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, reactive } from 'vue';
 import { useRoute } from 'vue-router';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -22,8 +22,49 @@ export default {
     const server = route.query.server;
     const serverId = route.query.serverId; // Read serverId from query params
     const terminal = ref(null);
+    const originalStyles = reactive({
+      body: {},
+      app: {}
+    });
 
     onMounted(async () => {
+      // Store original styles
+      originalStyles.body = {
+        margin: document.body.style.margin,
+        padding: document.body.style.padding,
+        overflow: document.body.style.overflow,
+        height: document.body.style.height,
+        width: document.body.style.width
+      };
+      const appEl = document.getElementById('app');
+      if (appEl) {
+        originalStyles.app = {
+          margin: appEl.style.margin,
+          padding: appEl.style.padding,
+          maxWidth: appEl.style.maxWidth,
+          height: appEl.style.height,
+          display: appEl.style.display,
+          flexDirection: appEl.style.flexDirection
+        };
+      }
+
+      // Apply full screen styles
+      document.body.style.margin = '0';
+      document.body.style.padding = '0';
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100vh';
+      document.body.style.width = '100vw';
+
+      if (appEl) {
+        appEl.style.margin = '0';
+        appEl.style.padding = '0';
+        appEl.style.maxWidth = 'none';
+        appEl.style.height = '100vh';
+        appEl.style.width = '100%'; // Explicitly set width to 100%
+        appEl.style.display = 'flex';
+        appEl.style.flexDirection = 'column';
+      }
+
       // Check and refresh token before proceeding
       const isAuthenticated = await checkAndRefreshToken();
       if (!isAuthenticated) {
@@ -34,9 +75,12 @@ export default {
         return;
       }
 
-      const term = new Terminal();
+      const term = new Terminal({
+        copyOnSelect: true
+      });
       const fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
+      document.title = `Connecting to: ${site} - ${server}`;
       term.open(document.getElementById('terminal'));
       fitAddon.fit();
 
@@ -101,6 +145,26 @@ export default {
       }
     });
 
+    onUnmounted(() => {
+      // Restore original styles
+      document.body.style.margin = originalStyles.body.margin;
+      document.body.style.padding = originalStyles.body.padding;
+      document.body.style.overflow = originalStyles.body.overflow;
+      document.body.style.height = originalStyles.body.height;
+      document.body.style.width = originalStyles.body.width;
+
+      const appEl = document.getElementById('app');
+      if (appEl) {
+        appEl.style.margin = originalStyles.app.margin;
+        appEl.style.padding = originalStyles.app.padding;
+        appEl.style.maxWidth = originalStyles.app.maxWidth;
+        appEl.style.height = originalStyles.app.height;
+        appEl.style.width = originalStyles.app.width; // Restore original width
+        appEl.style.display = originalStyles.app.display;
+        appEl.style.flexDirection = originalStyles.app.flexDirection;
+      }
+    });
+
     // Function to check token expiry and refresh if needed
     const checkAndRefreshToken = async () => {
       const token = localStorage.getItem('token');
@@ -159,8 +223,16 @@ export default {
 </script>
 
 <style scoped>
+.terminal-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Allow container to take remaining height */
+  height: 100%; /* Use 100% of parent height */
+  overflow: hidden; /* Prevent scrollbars on the container */
+}
+
 #terminal {
-  width: 800px;
-  height: 600px;
+  flex-grow: 1; /* Allow terminal to take remaining space */
+  width: 100% !important; /* Ensure terminal takes full width */
 }
 </style>
