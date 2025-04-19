@@ -1,9 +1,11 @@
 <template>
-  <transition name="fade">
-    <div v-if="visible" class="notification" :class="type">
-      {{ message }}
-    </div>
-  </transition>
+  <teleport to="body">
+    <transition name="fade">
+      <div v-if="visible" class="notification" :class="type">
+        {{ message }}
+      </div>
+    </transition>
+  </teleport>
 </template>
 
 <script>

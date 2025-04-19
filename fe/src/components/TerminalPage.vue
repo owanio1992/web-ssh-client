@@ -3,11 +3,17 @@
     <h1>Terminal</h1>
     <p>Connecting to: {{ site }} - {{ server }}</p>
     <div id="terminal"></div>
+    <Notification
+      :message="notificationDetails.message"
+      :type="notificationDetails.type"
+      :trigger="notificationTrigger"
+    />
   </div>
 </template>
 
 <script>
 import { ref, onMounted, onUnmounted, reactive } from 'vue';
+import Notification from './Notification.vue';
 import { useRoute } from 'vue-router';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -16,6 +22,9 @@ import axios from 'axios';
 import { backendUrl } from '../config.js';
 
 export default {
+  components: {
+    Notification
+  },
   setup() {
     const route = useRoute();
     const site = route.query.site;
@@ -25,6 +34,11 @@ export default {
     const originalStyles = reactive({
       body: {},
       app: {}
+    });
+    const notificationTrigger = ref(0);
+    const notificationDetails = reactive({
+      message: '',
+      type: 'success'
     });
 
     onMounted(async () => {
@@ -83,6 +97,29 @@ export default {
       document.title = `Connecting to: ${site} - ${server}`;
       term.open(document.getElementById('terminal'));
       fitAddon.fit();
+
+      // Manually handle copy on select
+      term.onSelectionChange(() => {
+        if (term.hasSelection()) {
+          navigator.clipboard.writeText(term.getSelection())
+            .then(() => {
+              console.log('Text copied to clipboard');
+              notificationDetails.message = 'Text copied to clipboard!';
+              notificationDetails.type = 'success';
+              console.log('Before trigger increment:', notificationTrigger.value);
+              notificationTrigger.value++;
+              console.log('After trigger increment:', notificationTrigger.value);
+            })
+            .catch(err => {
+              console.error('Failed to copy text: ', err);
+              notificationDetails.message = 'Failed to copy text.';
+              notificationDetails.type = 'error';
+              console.log('Before trigger increment (error):', notificationTrigger.value);
+              notificationTrigger.value++;
+              console.log('After trigger increment (error):', notificationTrigger.value);
+            });
+        }
+      });
 
       term.writeln('Welcome to the terminal!');
       term.writeln(`Connecting to ${site} - ${server}...`);
@@ -216,7 +253,9 @@ export default {
     return {
       terminal,
       site,
-      server
+      server,
+      notificationTrigger,
+      notificationDetails
     };
   }
 }
