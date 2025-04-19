@@ -39,6 +39,7 @@ class Server(models.Model):
     user = models.CharField(max_length=200)
     host = models.CharField(max_length=200)
     ssh_key = models.ForeignKey(SSHKey, on_delete=models.CASCADE)
+    proxy_server = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.site_name} - {self.server_name}"

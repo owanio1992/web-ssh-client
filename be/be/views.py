@@ -69,6 +69,7 @@ def add_server(request):
     user = request.data.get('user')
     host = request.data.get('host')
     ssh_key_id = request.data.get('ssh_key')
+    proxy_server_id = request.data.get('proxy_server')
 
     if not site_name or not server_name or not user or not host or not ssh_key_id:
         return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -80,11 +81,18 @@ def add_server(request):
     except SSHKey.DoesNotExist:
         return Response({'error': 'SSH key not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
+    proxy_server = None
+    if proxy_server_id:
+        try:
+            proxy_server = Server.objects.get(pk=proxy_server_id)
+        except Server.DoesNotExist:
+            return Response({'error': 'Proxy server not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
     # Check for uniqueness within the same site
     if Server.objects.filter(site_name=site_name, server_name=server_name).exists():
         return Response({'error': f'Server name "{server_name}" already exists in site "{site_name}".'}, status=status.HTTP_400_BAD_REQUEST)
 
-    server = Server(site_name=site_name, server_name=server_name, user=user, host=host, ssh_key=ssh_key)
+    server = Server(site_name=site_name, server_name=server_name, user=user, host=host, ssh_key=ssh_key, proxy_server=proxy_server)
     server.save()
 
     return Response({'message': 'Server added successfully.'}, status=status.HTTP_201_CREATED)
@@ -93,7 +101,7 @@ def add_server(request):
 @permission_classes([IsAuthenticated])
 def list_servers(request):
     servers = Server.objects.all()
-    data = [{'id': server.id, 'site_name': server.site_name, 'server_name': server.server_name, 'user': server.user, 'host': server.host, 'ssh_key_name': server.ssh_key.name} for server in servers]
+    data = [{'id': server.id, 'site_name': server.site_name, 'server_name': server.server_name, 'user': server.user, 'host': server.host, 'ssh_key_name': server.ssh_key.name, 'proxy_server_name': f"{server.proxy_server.site_name} - {server.proxy_server.server_name}" if server.proxy_server else None} for server in servers]
     return Response(data)
 
 @api_view(['DELETE'])
@@ -377,6 +385,13 @@ def connect_server(request):
                 break
         if has_permission:
             break
+
+    # Check if a proxy server is specified
+    if server.proxy_server:
+        proxy_server = server.proxy_server
+        logger.info(f"Using proxy server {proxy_server.site_name}-{proxy_server.server_name} to connect to {server.site_name}-{server.server_name}")
+    else:
+        proxy_server = None
 
     if not has_permission:
         logger.warning(f"Permission denied for user {user.username} to connect to server {server.site_name}-{server.server_name}")

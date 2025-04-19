@@ -46,6 +46,25 @@
             </template>
           </v-select>
         </div>
+        <div class="form-group">
+          <label for="proxyServerName">Proxy Server:</label>
+          <v-select
+            id="proxyServerName"
+            :options="proxyServers"
+            :reduce="key => key.id"
+            :get-option-label="server => `${server.site_name} - ${server.server_name}`"
+            v-model="newServer.proxyServerName"
+            placeholder="Select Proxy Server"
+          >
+            <template #search="{ attributes, events }">
+              <input
+                class="vs__search"
+                v-bind="attributes"
+                v-on="events"
+              />
+            </template>
+          </v-select>
+        </div>
         <button type="submit">Add Server</button>
       </form>
     </div>
@@ -60,6 +79,7 @@
             <th>User</th>
             <th>Host</th>
             <th>SSH Key Name</th>
+            <th>Proxy Server</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -70,6 +90,7 @@
             <td>{{ server.user }}</td>
             <td>{{ server.host }}</td>
             <td>{{ server.ssh_key_name }}</td>
+            <td>{{ server.proxy_server_name }}</td>
             <td>
               <button @click="deleteServer(server)">Delete</button>
             </td>
@@ -107,8 +128,10 @@ export default {
       user: '',
       host: '',
       sshKeyName: '',
+      proxyServerName: '',
     });
     const sshKeys = ref([]);
+    const proxyServers = ref([]);
     const searchQuery = ref('');
     const notificationMessage = ref('');
     const notificationType = ref('success');
@@ -152,9 +175,26 @@ export default {
       }
     };
 
+    const fetchProxyServers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${backendUrl}/api/servers/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        // Filter out the current server being created
+        proxyServers.value = response.data.filter(server => server.id !== newServer.value.id);
+        console.log('Proxy Servers fetched:', proxyServers.value);
+      } catch (error) {
+        console.error('Error fetching proxy servers:', error);
+      }
+    };
+
     onMounted(async () => {
       fetchServers();
       fetchSSHKeys();
+      fetchProxyServers();
       console.log('ManageServers component mounted');
     });
 
@@ -175,6 +215,7 @@ export default {
           user: newServer.value.user,
           host: newServer.value.host,
           ssh_key: newServer.value.sshKeyName, // Use sshKeyName for ssh_key_id
+          proxy_server: newServer.value.proxyServerName,
         }, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -189,6 +230,7 @@ export default {
           user: '',
           host: '',
           sshKeyName: '',
+          proxyServerName: '',
         };
         // Show success notification
         notificationMessage.value = 'Server added successfully!';
@@ -244,6 +286,7 @@ export default {
       notificationMessage,
       notificationType,
       notificationTrigger,
+      proxyServers,
     };
   },
 };

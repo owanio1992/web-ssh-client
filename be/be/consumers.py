@@ -56,10 +56,30 @@ class SSHConsumer(AsyncWebsocketConsumer):
             pkey = await sync_to_async(paramiko.RSAKey.from_private_key)(io.StringIO(ssh_key_content))
             logger.info("SSHConsumer: Private key loaded.")
 
-            logger.info(f"SSHConsumer: Attempting to connect to {server.host} as {server.user}...")
-            # Use sync_to_async for synchronous SSH connection
-            await sync_to_async(self.ssh_client.connect)(server.host, username=server.user, pkey=pkey)
-            logger.info("SSHConsumer: SSH connection established.")
+            proxy_server = await sync_to_async(lambda: server.proxy_server)()
+            if proxy_server:
+                logger.info(f"SSHConsumer: Connecting via proxy server {proxy_server.host}...")
+                # Connect to the proxy server
+                proxy_server = await self.get_server(proxy_server.id)
+                proxy_ssh_key = await sync_to_async(lambda: proxy_server.ssh_key)()
+                proxy_ssh_key_content = proxy_ssh_key.decrypt_key()
+                proxy_pkey = await sync_to_async(paramiko.RSAKey.from_private_key)(io.StringIO(proxy_ssh_key_content))
+
+                # Create a transport to the proxy server
+                transport = paramiko.Transport((proxy_server.host, 22))
+                transport.connect(username=proxy_server.user, pkey=proxy_pkey)
+
+                # Open a channel through the proxy to the destination server
+                channel = transport.open_channel("direct-tcpip", (server.host, 22), ("127.0.0.1", 0))
+
+                # Authenticate to the destination server
+                self.ssh_client.connect(server.host, username=server.user, pkey=pkey, sock=channel)
+                logger.info(f"SSHConsumer: SSH connection established via proxy server {proxy_server.host}.")
+            else:
+                logger.info(f"SSHConsumer: Attempting to connect to {server.host} as {server.user}...")
+                # Use sync_to_async for synchronous SSH connection
+                await sync_to_async(self.ssh_client.connect)(server.host, username=server.user, pkey=pkey)
+                logger.info("SSHConsumer: SSH connection established.")
 
             # Start a shell
             logger.info("SSHConsumer: Invoking shell...")
