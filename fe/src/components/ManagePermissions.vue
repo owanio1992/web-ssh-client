@@ -93,7 +93,7 @@
                 type="checkbox"
                 :id="'user-role-' + role.id"
                 :value="role.id"
-                :checked="selectedUserRoles.has(role.id)"
+                :checked="isRoleAssignedToUser(role.id)"
                 @change="toggleRoleSelection(role.id, $event.target.checked)"
                 :disabled="!selectedUser"
               />
@@ -157,8 +157,8 @@ export default {
         const response = await axios.get(`${backendUrl}/api/users/${userId}/roles/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        selectedUserRoles.value = new Set(response.data);
-        originalUserRoles.value = new Set(response.data); // Store original state
+        selectedUserRoles.value = new Set(response.data.map(role => role.id));
+        originalUserRoles.value = new Set(response.data.map(role => role.id)); // Store original state
       } catch (error) {
         console.error('Error fetching user roles:', error);
         notificationMessage.value = 'Error fetching user roles.';
@@ -174,7 +174,6 @@ export default {
         get: () => selectedUserRef.value,
         set: (value) => {
             selectedUserRef.value = value;
-            // The watcher below will trigger fetchUserRoles
         }
     });
 
@@ -194,26 +193,7 @@ export default {
         });
         const allRoles = response.data;
 
-        // Filter roles based on user's roles
-        if (selectedUserRef.value) {
-          try {
-            const userRolesResponse = await axios.get(`${backendUrl}/api/users/${selectedUserRef.value}/roles/`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-            const userRoles = new Set(userRolesResponse.data.map(role => role.id));
-            roles.value = allRoles.filter(role => userRoles.has(role.id));
-          } catch (error) {
-            console.error('Error fetching user roles:', error);
-            notificationMessage.value = 'Error fetching user roles.';
-            notificationType.value = 'error';
-            notificationTrigger.value++;
-            roles.value = [];
-          }
-        } else {
-          roles.value = allRoles;
-        }
+        roles.value = allRoles;
       } catch (error) {
         console.error('Error fetching roles:', error);
         notificationMessage.value = 'Error fetching roles.';
@@ -409,6 +389,11 @@ export default {
       }
     };
 
+   const isRoleAssignedToUser = (roleId) => {
+     const hasRole = selectedUserRoles.value.has(roleId);
+     return hasRole;
+   };
+
     onMounted(() => {
       fetchRoles();
       fetchServers();
@@ -437,6 +422,7 @@ export default {
       isServerPermitted,
       updateServerPermissions,
       updateRolePermissions,
+      isRoleAssignedToUser,
     };
   },
 };
