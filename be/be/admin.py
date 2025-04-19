@@ -1,6 +1,5 @@
 from django.contrib import admin
 from .models import SSHKey, Server, Role, UserRole
-from django.db import models
 
 class SSHKeyAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'key_content')

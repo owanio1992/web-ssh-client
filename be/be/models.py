@@ -1,4 +1,3 @@
-import os
 from django.db import models
 from cryptography.fernet import Fernet
 from django.conf import settings

@@ -1,12 +1,11 @@
 import json
 import paramiko
-import asyncio
 import threading
 import io
 import traceback
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.shortcuts import get_object_or_404
-from .models import Server, SSHKey
+from .models import Server
 from asgiref.sync import sync_to_async
 class SSHConsumer(AsyncWebsocketConsumer):
     async def connect(self):
