@@ -88,6 +88,13 @@ export default {
           console.error('WebSocket error:', error); // Added log
         };
 
+        // Handle user input from the terminal
+        term.onData((data) => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ message: data }));
+          }
+        });
+
       } catch (error) {
         console.error("Error connecting to server:", error); // Added log
         term.writeln('Error connecting to server. Please check the console.');

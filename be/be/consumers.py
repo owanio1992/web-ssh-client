@@ -8,8 +8,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from django.shortcuts import get_object_or_404
 from .models import Server, SSHKey
 from asgiref.sync import sync_to_async
-from paramiko import PKey
-
 class SSHConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         print("SSHConsumer: Entering connect method.")
@@ -38,7 +36,7 @@ class SSHConsumer(AsyncWebsocketConsumer):
             print("SSHConsumer: Fetching server details...")
             server = await self.get_server(self.server_id)
             print(f"SSHConsumer: Fetched server details for {server.site_name} - {server.server_name}")
-            ssh_key = server.ssh_key
+            ssh_key = await sync_to_async(lambda: server.ssh_key)()
             # Decrypt the SSH key
             print("SSHConsumer: Decrypting SSH key...")
             ssh_key_content = ssh_key.decrypt_key()
@@ -53,7 +51,7 @@ class SSHConsumer(AsyncWebsocketConsumer):
             # Load the private key
             print("SSHConsumer: Loading private key...")
             # Use sync_to_async for synchronous key loading
-            pkey = await sync_to_async(Pkey.from_private_key)(io.StringIO(ssh_key_content))
+            pkey = await sync_to_async(paramiko.RSAKey.from_private_key)(io.StringIO(ssh_key_content))
             print("SSHConsumer: Private key loaded.")
 
             print(f"SSHConsumer: Attempting to connect to {server.host} as {server.user}...")
@@ -116,39 +114,43 @@ class SSHConsumer(AsyncWebsocketConsumer):
                     data = self.channel.recv(1024).decode()
                     print(f"SSHConsumer: Received data from channel: {data}") # Added log
                     # Send data back to the WebSocket consumer's receive method
-                    asyncio.run(self.channel_layer.send(
+                    from asgiref.sync import async_to_sync
+                    async_to_sync(self.channel_layer.send)(
                         self.channel_name,
                         {
                             'type': 'ssh_output',
                             'output': data
                         }
-                    ))
+                    )
                 elif self.channel.recv_stderr_ready():
                     data = self.channel.recv_stderr(1024).decode()
                     print(f"SSHConsumer: Received stderr from channel: {data}") # Added log
                     # Send data back to the WebSocket consumer's receive method
-                    asyncio.run(self.channel_layer.send(
+                    from asgiref.sync import async_to_sync
+                    async_to_sync(self.channel_layer.send)(
                         self.channel_name,
                         {
                             'type': 'ssh_output',
                             'output': data
                         }
-                    ))
+                    )
                 else:
                     # Small sleep to prevent busy-waiting
-                    asyncio.sleep(0.01)
+                    import time
+                    time.sleep(0.01)
         except Exception as e:
             print(f"Error reading from channel: {e}")
             traceback.print_exc()
         finally:
             print("SSHConsumer: Read thread finished.") # Added log
             # Signal the consumer to close the WebSocket
-            asyncio.run(self.channel_layer.send(
+            from asgiref.sync import async_to_sync
+            async_to_sync(self.channel_layer.send)(
                 self.channel_name,
                 {
                     'type': 'ssh_close'
                 }
-            ))
+            )
 
     async def get_server(self, server_id):
         # Since Django ORM is synchronous, run it in a separate thread pool
