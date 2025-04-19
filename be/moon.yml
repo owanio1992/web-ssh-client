@@ -23,18 +23,11 @@ tasks:
       DJANGO_SUPERUSER_USERNAME: admin
       DJANGO_SUPERUSER_PASSWORD: admin
       DJANGO_SUPERUSER_EMAIL: admin@localhost.local
-  ruff:
-    command: uv run ruff check . --fix
-    local: true
   dev: 
     # https://stackoverflow.com/questions/77623182/static-files-for-django-admin-cant-be-found-while-running-asgi-server
     command: uv run uvicorn be.asgi:application --reload --host 0.0.0.0
 
   purge:
     command: rm -rf @group(purge_targets)
-
     local: true
 
-  container_up:
-    command: docker-compose up -d
-    local: true
