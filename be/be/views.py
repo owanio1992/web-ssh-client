@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.shortcuts import get_object_or_404 # Added import
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -13,8 +13,8 @@ import paramiko
 import json
 from django.http import JsonResponse
 import io
-import traceback # Import the traceback module
-import uuid # Import the uuid module
+import traceback
+import uuid
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -196,6 +196,8 @@ def delete_permission(request, pk):
         return Response({'error': 'Permission not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     permission.delete()
+    return Response({'message': 'Permission deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_server(request, site_name, server_name):
@@ -363,13 +365,10 @@ def connect_server(request):
 
     try:
         server = Server.objects.get(pk=server_id)
-        ssh_key = server.ssh_key
-        # Decrypt the SSH key
-        ssh_key.key_content = ssh_key.decrypt_key()
+        # We don't need to decrypt the key here, the consumer will do it.
+        # We also don't establish the SSH connection here.
     except Server.DoesNotExist:
         return Response({'error': 'Server not found.'}, status=status.HTTP_404_NOT_FOUND)
-    except SSHKey.DoesNotExist:
-        return Response({'error': 'SSH Key not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     # Check user permissions
     user = request.user
@@ -387,17 +386,6 @@ def connect_server(request):
         return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
 
     try:
-        # Establish SSH connection
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # Auto-accept unknown host keys (for testing only)
-        # Use general PKey loader to support different key types (RSA, Ed25519, etc.)
-        # Attempt to load as RSA key directly from string content
-        pkey = paramiko.RSAKey.from_private_key(io.StringIO(ssh_key.key_content))
-        client.connect(server.host, username=server.user, key_filename=None, password=None, pkey=pkey)
-
-        # Start a shell
-        channel = client.invoke_shell()
-
         # Generate a unique session ID
         session_id = str(uuid.uuid4())
 

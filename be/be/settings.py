@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'channels',
+    'channels_redis', # Added channels_redis
 ]
 
 MIDDLEWARE = [
@@ -175,3 +176,13 @@ CORS_ALLOWED_ORIGINS = [
 # generate key
 ## python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ENCRYPTION_KEY = environ.get("ENCRYPTION_KEY","nq5Mi27z4MOXnyeDRjcoBfwVLmx5kvhhKICJhnuRZ3M=")
+
+# Channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
