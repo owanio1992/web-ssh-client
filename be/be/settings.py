@@ -137,7 +137,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1), # Set access token lifetime to 30 minutes
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1), # Set access token lifetime to 30 minutes
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1), # Default refresh token lifetime (can adjust if needed)
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
@@ -185,3 +185,20 @@ CHANNEL_LAYERS = {
 }
 
 STATIC_ROOT = path.join(BASE_DIR, 'static', )
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'be.views': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}

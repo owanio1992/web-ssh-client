@@ -7,6 +7,10 @@ from django.contrib.auth.models import User
 from .models import SSHKey, Server, Role, UserRole
 import traceback
 import uuid
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -375,6 +379,7 @@ def connect_server(request):
             break
 
     if not has_permission:
+        logger.warning(f"Permission denied for user {user.username} to connect to server {server.site_name}-{server.server_name}")
         return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
 
     try:
@@ -386,15 +391,17 @@ def connect_server(request):
         # Get the host from the request
         host = request.get_host()
 
+        # Log successful connection
+        logger.info(f"User {user.username} successfully connected to server {server.site_name}-{server.server_name}")
+
         # Generate WebSocket URL with the unique session ID
         websocket_url = f'{scheme}://{host}/ws/connect_server/{server_id}/{session_id}/'
 
-        print(f"Generated WebSocket URL: {websocket_url}") # Added log for debugging
+        logger.info(f"Generated WebSocket URL: {websocket_url}")
 
         return Response({'websocket_url': websocket_url}, status=status.HTTP_200_OK)
 
     except Exception as e:
         # Log the full traceback for debugging
-        print("Error in connect_server view:")
-        traceback.print_exc() # Print the full traceback
+        logger.error("Error in connect_server view:", exc_info=True)
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

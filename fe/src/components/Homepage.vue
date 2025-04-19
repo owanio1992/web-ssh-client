@@ -158,9 +158,10 @@ export default {
       if (expiry) {
         const remaining = parseInt(expiry) - new Date().getTime();
         if (remaining > 0) {
+          const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
           const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-          this.remainingTime = `${minutes}m ${seconds}s`;
+          this.remainingTime = `${hours}h ${minutes}m ${seconds}s`;
         } else {
           this.remainingTime = 'Session expired';
           clearInterval(this.intervalId);

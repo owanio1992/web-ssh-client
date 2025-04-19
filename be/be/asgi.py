@@ -9,7 +9,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'be.settings')
 django.setup()
 
 from . import routing
-print("asgi.py load")
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": AuthMiddlewareStack(

@@ -3,115 +3,116 @@ import paramiko
 import threading
 import io
 import traceback
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+logger = logging.getLogger(__name__)
 from django.shortcuts import get_object_or_404
 from .models import Server
 from asgiref.sync import sync_to_async
 class SSHConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        print("SSHConsumer: Entering connect method.")
+        logger.info("SSHConsumer: Entering connect method.")
         self.server_id = self.scope['url_route']['kwargs']['server_id']
         self.session_id = self.scope['url_route']['kwargs']['session_id']
         self.ssh_client = None
         self.channel = None
         self.read_thread = None
 
-        print(f"SSHConsumer: Attempting to accept WebSocket connection for server_id={self.server_id}, session_id={self.session_id}") # Added log
+        logger.info(f"SSHConsumer: Attempting to accept WebSocket connection for server_id={self.server_id}, session_id={self.session_id}")
         await self.accept()
-        print(f"SSHConsumer: WebSocket connection accepted for server_id={self.server_id}, session_id={self.session_id}") # Added log
+        logger.info(f"SSHConsumer: WebSocket connection accepted for server_id={self.server_id}, session_id={self.session_id}")
 
 
         import datetime
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"SSHConsumer: WebSocket connection established at {current_time}. Sending current time to frontend.")
+        logger.info(f"SSHConsumer: WebSocket connection established at {current_time}. Sending current time to frontend.")
         await self.send(text_data=json.dumps({
             'type': 'time_update',
             'time': current_time
         }))
 
         try:
-            print(f"SSHConsumer: WebSocket connected for server_id={self.server_id}, session_id={self.session_id}")
+            logger.info(f"SSHConsumer: WebSocket connected for server_id={self.server_id}, session_id={self.session_id}")
             # Fetch server and SSH key details
-            print("SSHConsumer: Fetching server details...")
+            logger.info("SSHConsumer: Fetching server details...")
             server = await self.get_server(self.server_id)
-            print(f"SSHConsumer: Fetched server details for {server.site_name} - {server.server_name}")
+            logger.info(f"SSHConsumer: Fetched server details for {server.site_name} - {server.server_name}")
             ssh_key = await sync_to_async(lambda: server.ssh_key)()
             # Decrypt the SSH key
-            print("SSHConsumer: Decrypting SSH key...")
+            logger.info("SSHConsumer: Decrypting SSH key...")
             ssh_key_content = ssh_key.decrypt_key()
-            print("SSHConsumer: SSH key decrypted.")
+            logger.info("SSHConsumer: SSH key decrypted.")
 
             # Establish SSH connection
-            print("SSHConsumer: Initializing SSH client...")
+            logger.info("SSHConsumer: Initializing SSH client...")
             self.ssh_client = paramiko.SSHClient()
             self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            print("SSHConsumer: SSH client initialized.")
+            logger.info("SSHConsumer: SSH client initialized.")
 
             # Load the private key
-            print("SSHConsumer: Loading private key...")
+            logger.info("SSHConsumer: Loading private key...")
             # Use sync_to_async for synchronous key loading
             pkey = await sync_to_async(paramiko.RSAKey.from_private_key)(io.StringIO(ssh_key_content))
-            print("SSHConsumer: Private key loaded.")
+            logger.info("SSHConsumer: Private key loaded.")
 
-            print(f"SSHConsumer: Attempting to connect to {server.host} as {server.user}...")
+            logger.info(f"SSHConsumer: Attempting to connect to {server.host} as {server.user}...")
             # Use sync_to_async for synchronous SSH connection
             await sync_to_async(self.ssh_client.connect)(server.host, username=server.user, pkey=pkey)
-            print("SSHConsumer: SSH connection established.")
+            logger.info("SSHConsumer: SSH connection established.")
 
             # Start a shell
-            print("SSHConsumer: Invoking shell...")
+            logger.info("SSHConsumer: Invoking shell...")
             self.channel = self.ssh_client.invoke_shell()
-            print("SSHConsumer: Shell invoked.")
+            logger.info("SSHConsumer: Shell invoked.")
 
             # Start a thread to read from the SSH channel
             self.read_thread = threading.Thread(target=self.read_from_channel, daemon=True)
             self.read_thread.start()
 
         except Exception as e:
-            print(f"SSH connection error: {e}")
-            traceback.print_exc()
+            logger.error(f"SSH connection error: {e}", exc_info=True)
             await self.send(text_data=json.dumps({
                 'error': f'Failed to connect to server: {e}'
             }))
             await self.close()
 
     async def disconnect(self, close_code):
-        print(f"SSHConsumer: Disconnecting with code {close_code}") # Added log
+        logger.info(f"SSHConsumer: Disconnecting with code {close_code}")
         if self.channel:
             self.channel.close()
-            print("SSHConsumer: SSH channel closed.") # Added log
+            logger.info("SSHConsumer: SSH channel closed.")
         if self.ssh_client:
             self.ssh_client.close()
-            print("SSHConsumer: SSH client closed.") # Added log
+            logger.info("SSHConsumer: SSH client closed.")
         if self.read_thread and self.read_thread.is_alive():
             # It's generally not safe to forcefully stop a thread,
             # but for a daemon thread reading from a closed channel,
             # it should exit naturally. We can add a small timeout
             # if needed, but for now, rely on the channel closing.
             pass
-        print("SSHConsumer: Disconnect method finished.") # Added log
+        logger.info("SSHConsumer: Disconnect method finished.")
 
 
     async def receive(self, text_data):
-        print(f"SSHConsumer: Received message: {text_data}") # Added log
+        logger.info(f"SSHConsumer: Received message: {text_data}")
         try:
             text_data_json = json.loads(text_data)
             message = text_data_json.get('message')
 
             if self.channel and message:
-                print(f"SSHConsumer: Sending message to SSH channel: {message}") # Added log
+                logger.info(f"SSHConsumer: Sending message to SSH channel: {message}")
                 self.channel.send(message)
         except Exception as e:
-            print(f"Error receiving message: {e}")
-            traceback.print_exc()
+            logger.error(f"Error receiving message: {e}", exc_info=True)
 
     def read_from_channel(self):
-        print("SSHConsumer: Read thread started.") # Added log
+        logger.info("SSHConsumer: Read thread started.")
         try:
             while not self.channel.closed:
                 if self.channel.recv_ready():
                     data = self.channel.recv(1024).decode()
-                    print(f"SSHConsumer: Received data from channel: {data}") # Added log
+                    logger.info(f"SSHConsumer: Received data from channel: {data}")
                     # Send data back to the WebSocket consumer's receive method
                     from asgiref.sync import async_to_sync
                     async_to_sync(self.channel_layer.send)(
@@ -123,7 +124,7 @@ class SSHConsumer(AsyncWebsocketConsumer):
                     )
                 elif self.channel.recv_stderr_ready():
                     data = self.channel.recv_stderr(1024).decode()
-                    print(f"SSHConsumer: Received stderr from channel: {data}") # Added log
+                    logger.info(f"SSHConsumer: Received stderr from channel: {data}")
                     # Send data back to the WebSocket consumer's receive method
                     from asgiref.sync import async_to_sync
                     async_to_sync(self.channel_layer.send)(
@@ -138,10 +139,9 @@ class SSHConsumer(AsyncWebsocketConsumer):
                     import time
                     time.sleep(0.01)
         except Exception as e:
-            print(f"Error reading from channel: {e}")
-            traceback.print_exc()
+            logger.error(f"Error reading from channel: {e}", exc_info=True)
         finally:
-            print("SSHConsumer: Read thread finished.") # Added log
+            logger.info("SSHConsumer: Read thread finished.")
             # Signal the consumer to close the WebSocket
             from asgiref.sync import async_to_sync
             async_to_sync(self.channel_layer.send)(
@@ -160,11 +160,11 @@ class SSHConsumer(AsyncWebsocketConsumer):
 
     # Handler for messages received from the read_from_channel thread
     async def ssh_output(self, event):
-        print(f"SSHConsumer: Sending SSH output to WebSocket: {event['output']}") # Added log
+        logger.info(f"SSHConsumer: Sending SSH output to WebSocket: {event['output']}")
         # Send the SSH output to the WebSocket
         await self.send(text_data=json.dumps({'output': event['output']}))
 
     # Handler to close the WebSocket when the SSH channel closes
     async def ssh_close(self, event):
-        print("SSHConsumer: Received ssh_close event. Closing WebSocket.") # Added log
+        logger.info("SSHConsumer: Received ssh_close event. Closing WebSocket.")
         await self.close()
