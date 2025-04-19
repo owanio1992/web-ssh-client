@@ -389,8 +389,15 @@ def connect_server(request):
         # Generate a unique session ID
         session_id = str(uuid.uuid4())
 
+        # Get the request scheme (http or https)
+        scheme = 'wss' if request.is_secure() else 'ws'
+        # Get the host from the request
+        host = request.get_host()
+
         # Generate WebSocket URL with the unique session ID
-        websocket_url = f'ws/connect_server/{server_id}/{session_id}/'
+        websocket_url = f'{scheme}://{host}/ws/connect_server/{server_id}/{session_id}/'
+
+        print(f"Generated WebSocket URL: {websocket_url}") # Added log for debugging
 
         return Response({'websocket_url': websocket_url}, status=status.HTTP_200_OK)
 

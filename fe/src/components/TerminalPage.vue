@@ -55,26 +55,41 @@ export default {
         });
 
         const websocketUrl = response.data.websocket_url;
+        console.log('Attempting to connect to WebSocket:', websocketUrl); // Added log
         const ws = new WebSocket(websocketUrl);
 
         ws.onopen = () => {
+          console.log('WebSocket connection established.'); // Added log
           term.writeln('WebSocket connection established.');
         };
 
         ws.onmessage = (event) => {
-          term.write(event.data);
+          console.log('WebSocket message received:', event.data); // Added log
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'time_update') {
+              term.writeln(`Received time from backend: ${data.time}`);
+            } else if (data.output) {
+              term.write(data.output);
+            } else {
+              term.write(event.data);
+            }
+          } catch (e) {
+            term.write(event.data);
+          }
         };
 
         ws.onclose = () => {
+          console.log('WebSocket connection closed.'); // Added log
           term.writeln('WebSocket connection closed.');
         };
 
         ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          console.error('WebSocket error:', error); // Added log
         };
 
       } catch (error) {
-        console.error("Error connecting to server:", error);
+        console.error("Error connecting to server:", error); // Added log
         term.writeln('Error connecting to server. Please check the console.');
       }
     });
@@ -87,16 +102,19 @@ export default {
 
       if (!token || !expiry || !refreshToken) {
         // No token or expiry found, user is not logged in
+        console.log('No token, expiry, or refresh token found.'); // Added log
         return false;
       }
 
       const currentTime = new Date().getTime();
       if (currentTime < parseInt(expiry)) {
         // Token is still valid
+        console.log('Token is still valid.'); // Added log
         return true;
       }
 
       // Token is expired, attempt to refresh
+      console.log('Token expired, attempting refresh.'); // Added log
       try {
         const response = await axios.post(`${backendUrl}/api/token/refresh/`, {
           refresh: refreshToken
