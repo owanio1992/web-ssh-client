@@ -1,9 +1,18 @@
+fileGroups:
+  purge_targets:
+    - 'dist'
+    - 'node_modules'
+
 tasks:
+  update:
+    command: bun update
+    local: true
   init:
     command: bun install
   dev:
     command: bun run dev
+  build:
+    command: bun run build
   purge:
-    command: rm -rf node_modules
+    command: rm -rf @group(purge_targets)
     local: true
-  

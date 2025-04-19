@@ -1,5 +1,6 @@
 <template>
   <div class="login-page">
+    <div class="logo">web ssh client</div>
     <h1>Login</h1>
     <form @submit.prevent="login">
       <div class="form-group">
@@ -90,6 +91,13 @@ export default {
   padding: 20px;
   border: 1px solid #ccc;
   border-radius: 5px;
+  text-align: center; /* Center the content */
+}
+
+.logo {
+  font-size: 2em; /* Adjust size as needed */
+  margin-bottom: 20px; /* Space below the logo */
+  color: #333; /* Adjust color as needed */
 }
 
 .form-group {

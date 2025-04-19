@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'channels',
-    'channels_redis', # Added channels_redis
 ]
 
 MIDDLEWARE = [
@@ -138,7 +137,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30), # Set access token lifetime to 30 minutes
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1), # Set access token lifetime to 30 minutes
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1), # Default refresh token lifetime (can adjust if needed)
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
@@ -170,6 +169,7 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:8080',
+    'https://localhost:8080',
 ]
 
 # Encryption Key need valid 32-byte url-safe base64-encoded string.
@@ -179,11 +179,8 @@ ENCRYPTION_KEY = environ.get("ENCRYPTION_KEY","nq5Mi27z4MOXnyeDRjcoBfwVLmx5kvhhK
 
 # Channels
 CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
 

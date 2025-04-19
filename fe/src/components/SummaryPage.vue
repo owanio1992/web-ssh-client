@@ -14,14 +14,19 @@
       </ul>
     </div>
   </div>
+  <Notification :message="notificationMessage" :type="notificationType" :trigger="notificationTrigger" />
 </template>
 
 <script>
 import { ref, onMounted } from 'vue';
 import { backendUrl } from '../config.js';
+import Notification from './Notification.vue';
 
 export default {
   name: 'SummaryPage',
+  components: {
+    Notification
+  },
   setup() {
     const username = ref('User');
     const hours = ref('');
@@ -29,6 +34,9 @@ export default {
     const seconds = ref('');
     const date = ref('');
     const group = ref('');
+    const notificationMessage = ref('');
+    const notificationType = ref('success');
+    const notificationTrigger = ref(0);
 
     const fetchUserData = async () => {
       try {
@@ -39,24 +47,39 @@ export default {
           }
         });
         const data = await response.json();
-        if (data && data.first_name && data.last_name) {
-          username.value = `Welcome, ${data.first_name} ${data.last_name}!`;
+        if (data) {
+          if (data.first_name && data.last_name) {
+            username.value = `Welcome, ${data.first_name} ${data.last_name}!`;
+          } else {
+            username.value = 'Welcome, User!';
+            notificationMessage.value = 'Please update your profile with your first and last name.';
+            notificationType.value = 'error';
+            notificationTrigger.value++;
+          }
+
           if (data.last_login) {
             const lastLoginDate = new Date(data.last_login);
             const localLastLogin = lastLoginDate.toLocaleString();
             lastLogin.value = `Last login: ${localLastLogin}`;
           }
+
           if (data.groups && data.groups.length > 0) {
-            group.value = data.groups.map(group => group.name).join(', ');
+            const isAdmin = data.groups.some(group => group.name === 'admin');
+            group.value = isAdmin ? 'admin' : 'user';
           } else {
-            group.value = 'No group';
+            group.value = 'user'; // Default to user if no groups
           }
         } else {
           username.value = 'Welcome, User!';
+          group.value = 'user';
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
         username.value = 'Welcome, User!';
+        group.value = 'user';
+        notificationMessage.value = 'Failed to fetch user data.';
+        notificationType.value = 'error';
+        notificationTrigger.value++;
       }
     };
 
@@ -90,7 +113,10 @@ export default {
       seconds,
       date,
       lastLogin,
-      group
+      group,
+      notificationMessage,
+      notificationType,
+      notificationTrigger
     };
   }
 }

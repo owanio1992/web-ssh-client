@@ -1,6 +1,16 @@
+fileGroups:
+  purge_targets:
+    - '.venv'
+    - 'db.sqlite3'
+    - '*/__pycache__'
+    - '*/*/__pycache__'
+
 tasks:
+  update:
+    command: uv lock
+    local: true
   init:
-    command: uv sync
+    command: uv sync --locked
   makemigrations:
     command: uv run manage.py makemigrations be
     local: true
@@ -17,8 +27,12 @@ tasks:
   dev: 
     # https://stackoverflow.com/questions/77623182/static-files-for-django-admin-cant-be-found-while-running-asgi-server
     command: uv run uvicorn be.asgi:application --reload --host 0.0.0.0
-  run:
-    command: uv run manage.py runserver
+
   purge:
-    command: rm -rf .venv && rm -f db.sqlite3
+    command: rm -rf @group(purge_targets)
+
+    local: true
+
+  container_up:
+    command: docker-compose up -d
     local: true

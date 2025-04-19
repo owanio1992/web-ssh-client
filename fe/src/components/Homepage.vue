@@ -109,9 +109,35 @@ export default {
         })
         .then(data => {
           localStorage.setItem('token', data.access); // Store new access token
-          const expiry = new Date().getTime() + 30 * 60 * 1000; // Calculate new expiry time
-          localStorage.setItem('expiry', expiry.toString());
-          console.log('Session renewed');
+
+          // Decode JWT payload to get the actual expiration time
+          try {
+            const tokenParts = data.access.split('.');
+            if (tokenParts.length === 3) {
+              const payload = JSON.parse(atob(tokenParts[1]));
+              if (payload.exp) {
+                const expiryTimestamp = payload.exp * 1000; // Convert Unix timestamp (seconds) to milliseconds
+                localStorage.setItem('expiry', expiryTimestamp.toString());
+                console.log('Session renewed. New expiry:', new Date(expiryTimestamp));
+              } else {
+                console.error('Could not find "exp" claim in token payload.');
+                // Fallback or error handling needed? Maybe use a default?
+                // For now, let's keep the old behavior as a fallback if exp is missing
+                const expiry = new Date().getTime() + 30 * 60 * 1000; 
+                localStorage.setItem('expiry', expiry.toString());
+              }
+            } else {
+              console.error('Invalid token format received.');
+              // Fallback or error handling
+              const expiry = new Date().getTime() + 30 * 60 * 1000; 
+              localStorage.setItem('expiry', expiry.toString());
+            }
+          } catch (e) {
+            console.error('Error decoding token:', e);
+             // Fallback or error handling
+            const expiry = new Date().getTime() + 30 * 60 * 1000; 
+            localStorage.setItem('expiry', expiry.toString());
+          }
         })
         .catch(error => {
           console.error('Failed to renew session:', error);

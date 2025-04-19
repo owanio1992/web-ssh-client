@@ -25,6 +25,19 @@ after sign, should have side menu on left, and link to feature page, feature in 
   then user can click a connect button to connect to server, but before connect, system will check permission on this user
   if don't have permission, system retrun permission deny error to user
   if user have permission, system will open a web console terminal in new browser tab, the title should naming by "<site>-<server name>"
+  xterm.js architecture
+  [Client Browser]
+      |
+      | (1) open Web UI, loading xterm.js
+      | (2) create WebSocket connection
+      v
+  [xterm.js Server (WebSocket Server)]
+      |
+      | (3) use SSH key saved in server 
+      | (4) create SSH connect
+      v
+  [Remote Server]
+
   when browser tab opened, console should auto login to server
 
 2. BE, all source code in be/ folder
@@ -33,3 +46,4 @@ BE need provide feature to support FE feature
 - manage user by django
 - manage ssh key file
 - manage site/server info 
+
